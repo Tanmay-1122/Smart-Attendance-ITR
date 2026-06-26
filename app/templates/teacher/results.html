@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Attendance Results — {{ class_name }}</h2>
+<p class="text-muted">Date: {{ date }}</p>
+
+<form method="POST" action="/teacher/save_attendance">
+  <input type="hidden" name="class_name" value="{{ class_name }}">
+
+  <table class="table table-bordered">
+    <thead class="table-dark">
+      <tr>
+        <th>Student</th>
+        <th>Roll No</th>
+        <th>Score</th>
+        <th>Seen In</th>
+        <th>AI Decision</th>
+        <th>Override</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr
+        class="{% if r.status == 'PRESENT' %}table-success{% elif r.status == 'REVIEW' %}table-warning{% else %}table-danger{% endif %}">
+        <td>{{ r.name }}</td>
+        <td>{{ r.roll_number }}</td>
+        <td>{{ "%.2f"|format(r.best_score) }}</td>
+        <td>{{ r.seen_in }}</td>
+        <td>{{ r.status }}</td>
+        <td>
+          <select name="status_{{ r.student_id }}" class="form-select form-select-sm">
+            <option {% if r.status=='PRESENT' %}selected{% endif %}>PRESENT</option>
+            <option {% if r.status=='REVIEW' %}selected{% endif %}>REVIEW</option>
+            <option {% if r.status=='ABSENT' %}selected{% endif %}>ABSENT</option>
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button type="submit" class="btn btn-success">Save Attendance</button>
+  <a href="/teacher/dashboard" class="btn btn-secondary">Back</a>
+</form>
+
+{% endblock %}

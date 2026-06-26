@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Teacher Dashboard</h2>
+<p>Upload 3 photos to take attendance</p>
+
+<form method="POST" action="/teacher/scan" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label>Class Name</label>
+        <input type="text" name="class_name" class="form-control" placeholder="e.g. CS101" required>
+    </div>
+    <div class="mb-3">
+        <label>Photo 1</label>
+        <input type="file" name="photo1" class="form-control" accept="image/*" required>
+    </div>
+    <div class="mb-3">
+        <label>Photo 2</label>
+        <input type="file" name="photo2" class="form-control" accept="image/*" required>
+    </div>
+    <div class="mb-3">
+        <label>Photo 3</label>
+        <input type="file" name="photo3" class="form-control" accept="image/*" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Scan Attendance</button>
+</form>
+
+{% endblock %}
