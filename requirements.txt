@@ -5,7 +5,7 @@ flask-wtf
 deepface
 mtcnn
 opencv-python-headless
-tensorflow-cpu
+tensorflow==2.18.1
 tf-keras
 Pillow
 werkzeug
