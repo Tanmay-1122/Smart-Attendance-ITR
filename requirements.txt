@@ -12,3 +12,4 @@ werkzeug
 numpy
 pandas
 gunicorn
+psycopg2-binary

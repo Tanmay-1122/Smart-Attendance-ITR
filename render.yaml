@@ -5,3 +5,13 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-attendance-db
+          property: connectionString
+
+databases:
+  - name: smart-attendance-db
+    plan: free
+    databaseName: smart_attendance
+    ipAllowList: []

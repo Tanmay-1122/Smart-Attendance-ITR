@@ -40,12 +40,4 @@ def create_app():
         from .models import ChatMessage
         db.create_all()
 
-        # Add missing columns to existing tables (SQLite doesn't support ALTER TABLE ADD COLUMN IF)
-        with db.engine.connect() as conn:
-            try:
-                conn.execute(db.text("SELECT profile_photo FROM user LIMIT 1"))
-            except Exception:
-                conn.execute(db.text("ALTER TABLE user ADD COLUMN profile_photo VARCHAR(200)"))
-                conn.commit()
-
     return app
