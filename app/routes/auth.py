@@ -96,5 +96,5 @@ def profile():
 @auth_bp.route('/user/<int:user_id>')
 @login_required
 def user_profile(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     return render_template('auth/user_profile.html', profile_user=user)

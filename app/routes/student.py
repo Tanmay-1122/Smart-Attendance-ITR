@@ -198,7 +198,7 @@ def enroll_class(class_id):
     if not student:
         flash('Please enroll your face first.')
         return redirect(url_for('student.enroll'))
-    tc = TeacherClass.query.get_or_404(class_id)
+    tc = db.get_or_404(TeacherClass, class_id)
     existing = StudentClass.query.filter_by(student_id=student.id, class_id=tc.id).first()
     if existing:
         flash('You are already enrolled in this class.')
@@ -239,7 +239,7 @@ def homework():
 @student_bp.route('/homework/<int:hw_id>')
 @login_required
 def homework_detail(hw_id):
-    hw = Homework.query.get_or_404(hw_id)
+    hw = db.get_or_404(Homework, hw_id)
     hw.download_url = get_file_download_url(hw.file_id) if hw.file_id else None
     return render_template('student/homework_detail.html', hw=hw)
 
@@ -268,7 +268,7 @@ def homework_calendar_data():
 @login_required
 def homework_summarize(hw_id):
     """Generate AI summary for a homework assignment."""
-    hw = Homework.query.get_or_404(hw_id)
+    hw = db.get_or_404(Homework, hw_id)
 
     if hw.summary:
         return jsonify({'ok': True, 'summary': hw.summary})

@@ -46,7 +46,7 @@ def add_class():
 @teacher_bp.route('/classes/delete/<int:class_id>', methods=['POST'])
 @login_required
 def delete_class(class_id):
-    tc = TeacherClass.query.get_or_404(class_id)
+    tc = db.get_or_404(TeacherClass, class_id)
     if tc.teacher_id != current_user.id:
         flash('You can only delete your own classes.')
         return redirect(url_for('teacher.classes'))
@@ -65,7 +65,7 @@ def all_classes():
 @teacher_bp.route('/classes/<int:class_id>')
 @login_required
 def class_detail(class_id):
-    tc = TeacherClass.query.get_or_404(class_id)
+    tc = db.get_or_404(TeacherClass, class_id)
     if tc.teacher_id != current_user.id:
         flash('Access denied.')
         return redirect(url_for('teacher.classes'))
@@ -113,7 +113,7 @@ def class_detail(class_id):
 @teacher_bp.route('/classes/<int:class_id>/unenroll/<int:student_id>', methods=['POST'])
 @login_required
 def unenroll_student(class_id, student_id):
-    tc = TeacherClass.query.get_or_404(class_id)
+    tc = db.get_or_404(TeacherClass, class_id)
     if tc.teacher_id != current_user.id:
         flash('Access denied.')
         return redirect(url_for('teacher.classes'))
@@ -351,7 +351,7 @@ def homework():
 @teacher_bp.route('/homework/delete/<int:hw_id>', methods=['POST'])
 @login_required
 def delete_homework(hw_id):
-    hw = Homework.query.get_or_404(hw_id)
+    hw = db.get_or_404(Homework, hw_id)
     if hw.teacher_id != current_user.id:
         flash('You can only delete your own homework.')
         return redirect(url_for('teacher.homework'))
