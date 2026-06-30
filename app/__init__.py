@@ -37,7 +37,15 @@ def create_app():
         return redirect(url_for('auth.login'))
 
     with app.app_context():
-        from .models import ChatMessage  # ensure table is created
-        db.create_all()   # creates DB tables automatically
+        from .models import ChatMessage
+        db.create_all()
+
+        # Add missing columns to existing tables (SQLite doesn't support ALTER TABLE ADD COLUMN IF)
+        with db.engine.connect() as conn:
+            try:
+                conn.execute(db.text("SELECT profile_photo FROM user LIMIT 1"))
+            except Exception:
+                conn.execute(db.text("ALTER TABLE user ADD COLUMN profile_photo VARCHAR(200)"))
+                conn.commit()
 
     return app
