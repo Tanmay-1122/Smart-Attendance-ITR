@@ -1,0 +1,1 @@
+# Templates student package placeholder

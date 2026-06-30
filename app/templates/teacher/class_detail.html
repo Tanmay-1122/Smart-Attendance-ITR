@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <a href="/teacher/classes" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+    <div class="page-title" style="margin:0;">{{ tc.name }}</div>
+  </div>
+  {% if tc.description %}
+  <div class="page-sub">{{ tc.description }}</div>
+  {% else %}
+  <div class="page-sub">Enrolled students and attendance stats</div>
+  {% endif %}
+
+  <!-- Stats summary -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
+    <div class="streak-card">
+      <div class="streak-value">{{ students|length }}</div>
+      <div class="streak-label">Students</div>
+    </div>
+    <div class="streak-card">
+      <div class="streak-value" style="background:linear-gradient(135deg,var(--success),#22C55E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        {% set total_sessions = [] %}
+        {% for s in students %}{% if total_sessions.append(s.total) %}{% endif %}{% endfor %}
+        {{ students|map(attribute='total')|max if students else 0 }}
+      </div>
+      <div class="streak-label">Sessions</div>
+    </div>
+    <div class="streak-card streak-best">
+      <div class="streak-value">
+        {% if students %}
+        {% set avg_pct = (students|map(attribute='pct')|sum // students|length) %}
+        {{ avg_pct }}%
+        {% else %}0%{% endif %}
+      </div>
+      <div class="streak-label">Avg attendance</div>
+    </div>
+  </div>
+
+  <!-- Student list -->
+  <div class="section-label" style="margin-bottom:8px;">Enrolled students</div>
+  {% if students %}
+  <div class="card">
+    {% for s in students %}
+    <div style="padding:14px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-weight:700;font-size:.9rem;color:var(--text);">{{ s.student.user.name if s.student.user else 'Unknown' }}</div>
+            <span style="font-size:.72rem;color:var(--text-3);">#{{ s.student.roll_number }}</span>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;">
+            <span style="font-size:.72rem;font-weight:600;color:{% if s.pct >= 75 %}var(--success){% elif s.pct >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+              {{ s.pct }}% attendance
+            </span>
+            <span style="font-size:.72rem;color:var(--text-3);">{{ s.present }}P / {{ s.review }}R / {{ s.absent }}A</span>
+          </div>
+          {% if s.total > 0 %}
+          <div class="progress-track" style="margin-top:6px;">
+            <div class="progress-fill {% if s.pct >= 75 %}good{% elif s.pct >= 50 %}mid{% else %}bad{% endif %}" style="width:{{ s.pct }}%;"></div>
+          </div>
+          {% endif %}
+        </div>
+        <form method="POST" action="/teacher/classes/{{ tc.id }}/unenroll/{{ s.student.id }}" style="margin:0;" onsubmit="return confirm('Remove {{ s.student.user.name }} from {{ tc.name }}?');">
+          <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger);font-size:.72rem;padding:5px 10px;">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <p>No students enrolled yet.</p>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;gap:10px;margin-top:14px;">
+    <a href="/teacher/dashboard?class={{ tc.name }}" class="btn btn-primary">Scan attendance</a>
+    <a href="/teacher/classes" class="btn btn-ghost">Back to classes</a>
+  </div>
+
+</div>
+{% endblock %}

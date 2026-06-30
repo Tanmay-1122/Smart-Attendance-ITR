@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Post Homework</div>
+  <div class="page-sub">Share assignments with students. Files are stored via Telegram.</div>
+
+  <!-- Form -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="POST" action="/teacher/homework" enctype="multipart/form-data">
+
+        <div class="field">
+          <label class="label">Title</label>
+          <input type="text" name="title" class="input" placeholder="e.g. Chapter 5 Exercises" required>
+        </div>
+
+        <div class="field">
+          <label class="label">Class name</label>
+          {% if classes %}
+          <select name="class_name" class="select" required>
+            <option value="" disabled selected>Select a class</option>
+            {% for tc in classes %}
+            <option value="{{ tc.name }}">{{ tc.name }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="text" name="class_name" class="input" placeholder="No classes created yet" disabled>
+          {% endif %}
+        </div>
+
+        <div class="field">
+          <label class="label">Description (optional)</label>
+          <textarea name="description" class="input" rows="3" placeholder="Instructions for students..." style="resize:vertical;"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">Due date (optional)</label>
+          <input type="date" name="due_date" class="input">
+        </div>
+
+        <div class="field">
+          <label class="label">Attachment (optional)</label>
+          <label class="drop-zone" id="hw-drop" style="display:block;text-align:center;">
+            <input type="file" name="homework_file" accept=".pdf,.docx,.pptx,.txt,.xlsx,.zip,.jpg,.jpeg,.png,.gif" onchange="fileSelected(this)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px;display:block;color:var(--text-3);"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <div class="dz-label">Tap to attach PDF, image, or document</div>
+            <div class="dz-file" id="hw-file-name"></div>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Post Homework</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Recent homework -->
+  {% if homework_list %}
+  <div class="section-label" style="margin-bottom:8px;">Recent homework</div>
+  <div class="card" style="margin-bottom:10px;">
+    {% for hw in homework_list %}
+    <div style="padding:14px 16px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:.9rem;">{{ hw.title }}</div>
+          <div style="font-size:.78rem;color:var(--text-3);margin-top:2px;">{{ hw.class_name }} &middot; {{ hw.created_at.strftime('%d %b %Y') }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          {% if hw.file_name %}
+          <span class="badge badge-present" style="font-size:.65rem;">{{ hw.file_type or 'file' }}</span>
+          {% endif %}
+          {% if hw.teacher_id == current_user.id %}
+          <form method="POST" action="/teacher/homework/delete/{{ hw.id }}" onsubmit="return confirm('Delete this homework?');" style="margin:0;">
+            <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" onmouseover="this.style.background='var(--danger-bg)';this.style.color='var(--danger)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-3)'" title="Delete">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% if hw.description %}
+      <div style="font-size:.82rem;color:var(--text-2);margin-top:6px;">{{ hw.description[:120] }}{% if hw.description|length > 120 %}...{% endif %}</div>
+      {% endif %}
+      {% if hw.due_date %}
+      <div style="font-size:.72rem;color:var(--warning);margin-top:4px;font-weight:600;">Due: {{ hw.due_date.strftime('%d %b %Y') }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function fileSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  document.getElementById('hw-file-name').textContent = input.files[0].name;
+  document.getElementById('hw-drop').classList.add('filled');
+}
+</script>
+{% endblock %}

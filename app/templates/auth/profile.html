@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page" style="max-width:480px;">
+
+  <div class="page-title" style="margin-bottom:20px;">Profile Settings</div>
+
+  <!-- Profile Photo -->
+  <div class="card mb-3">
+    <div class="card-body" style="display:flex;align-items:center;gap:16px;">
+      <div id="avatar-preview" class="profile-avatar-lg">
+        {% if current_user.profile_photo %}
+        <img src="/static/uploads/{{ current_user.profile_photo }}" alt="Profile">
+        {% else %}
+        <span>{{ current_user.name[0]|upper }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:1rem;">{{ current_user.name }}</div>
+        <div style="font-size:.8rem;color:var(--text-3);margin-top:2px;">{{ current_user.email }}</div>
+        <div style="font-size:.72rem;color:var(--brand);font-weight:600;margin-top:4px;text-transform:uppercase;">{{ current_user.role }}</div>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" action="/auth/profile" enctype="multipart/form-data">
+
+    <!-- Photo Upload -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="label" style="margin-bottom:10px;">Profile Photo</div>
+        <label class="drop-zone" id="photo-drop">
+          <input type="file" name="profile_photo" accept="image/*" onchange="photoSelected(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <div class="dz-label">Tap to upload a photo</div>
+          <div class="dz-file" id="dz-file"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Name -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="field">
+          <label class="label">Full name</label>
+          <input type="text" name="name" class="input" value="{{ current_user.name }}" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email (read-only) -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="field" style="margin-bottom:0;">
+          <label class="label">Email address</label>
+          <input type="email" class="input" value="{{ current_user.email }}" disabled style="opacity:.6;cursor:not-allowed;">
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save changes</button>
+    <a href="javascript:history.back()" class="btn btn-ghost" style="margin-top:10px;">Cancel</a>
+
+  </form>
+</div>
+
+<script>
+function photoSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  document.getElementById('dz-file').textContent = file.name;
+  document.getElementById('photo-drop').classList.add('filled');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('avatar-preview').innerHTML =
+      '<img src="' + e.target.result + '" alt="Profile">';
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+{% endblock %}

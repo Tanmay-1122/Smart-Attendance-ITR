@@ -1,46 +1,85 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="page">
 
-<h2>Attendance Results — {{ class_name }}</h2>
-<p class="text-muted">Date: {{ date }}</p>
+  <div class="page-title">Attendance Results</div>
+  <div class="page-sub">{{ class_name }} &mdash; {{ date }}</div>
 
-<form method="POST" action="/teacher/save_attendance">
-  <input type="hidden" name="class_name" value="{{ class_name }}">
+  {% set present_c = results | selectattr('status','equalto','PRESENT') | list | length %}
+  {% set review_c  = results | selectattr('status','equalto','REVIEW')  | list | length %}
+  {% set absent_c  = results | selectattr('status','equalto','ABSENT')  | list | length %}
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;">
+    <span class="badge badge-present">{{ present_c }} Present</span>
+    <span class="badge badge-review">{{ review_c }} Review</span>
+    <span class="badge badge-absent">{{ absent_c }} Absent</span>
+  </div>
 
-  <table class="table table-bordered">
-    <thead class="table-dark">
-      <tr>
-        <th>Student</th>
-        <th>Roll No</th>
-        <th>Score</th>
-        <th>Seen In</th>
-        <th>AI Decision</th>
-        <th>Override</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in results %}
-      <tr
-        class="{% if r.status == 'PRESENT' %}table-success{% elif r.status == 'REVIEW' %}table-warning{% else %}table-danger{% endif %}">
-        <td>{{ r.name }}</td>
-        <td>{{ r.roll_number }}</td>
-        <td>{{ "%.2f"|format(r.best_score) }}</td>
-        <td>{{ r.seen_in }}</td>
-        <td>{{ r.status }}</td>
-        <td>
-          <select name="status_{{ r.student_id }}" class="form-select form-select-sm">
-            <option {% if r.status=='PRESENT' %}selected{% endif %}>PRESENT</option>
-            <option {% if r.status=='REVIEW' %}selected{% endif %}>REVIEW</option>
-            <option {% if r.status=='ABSENT' %}selected{% endif %}>ABSENT</option>
-          </select>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <form method="POST" action="/teacher/save_attendance" id="save-form">
+    <input type="hidden" name="class_name" value="{{ class_name }}">
 
-  <button type="submit" class="btn btn-success">Save Attendance</button>
-  <a href="/teacher/dashboard" class="btn btn-secondary">Back</a>
-</form>
+    {% if results %}
+    <div class="card mb-3">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Roll no.</th>
+              <th>Class</th>
+              <th>Score</th>
+              <th>Seen</th>
+              <th>AI decision</th>
+              <th>Override</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in results %}
+            <tr class="
+              {%- if r.status == 'PRESENT' %} row-present
+              {%- elif r.status == 'REVIEW' %} row-review
+              {%- else %} row-absent{%- endif %}">
+              <td style="font-weight:600;">{{ r.name }}</td>
+              <td style="color:var(--text-2);">{{ r.roll_number }}</td>
+              <td style="font-size:.8rem;color:var(--brand);font-weight:600;">{{ r.enrolled_class }}</td>
+              <td>{{ "%.2f"|format(r.best_score) }}</td>
+              <td>{{ r.seen_in }}</td>
+              <td>
+                <span class="badge
+                  {%- if r.status == 'PRESENT' %} badge-present
+                  {%- elif r.status == 'REVIEW' %} badge-review
+                  {%- else %} badge-absent{%- endif %}">
+                  {{ r.status }}
+                </span>
+              </td>
+              <td>
+                <input type="hidden" name="score_{{ r.student_id }}" value="{{ r.best_score }}">
+                <input type="hidden" name="enrolled_class_{{ r.student_id }}" value="{{ r.enrolled_class }}">
+                <select name="status_{{ r.student_id }}" class="">
+                  <option {% if r.status == 'PRESENT' %}selected{% endif %} value="PRESENT">Present</option>
+                  <option {% if r.status == 'REVIEW'  %}selected{% endif %} value="REVIEW">Review</option>
+                  <option {% if r.status == 'ABSENT'  %}selected{% endif %} value="ABSENT">Absent</option>
+                </select>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
+    <div class="row">
+      <button type="submit" class="btn btn-primary">Save attendance</button>
+      <a href="/teacher/dashboard" class="btn btn-ghost">Back</a>
+    </div>
+
+    {% else %}
+    <div class="card empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <p>No students detected in the uploaded photos.</p>
+    </div>
+    <a href="/teacher/dashboard" class="btn btn-ghost mt-3">Go back</a>
+    {% endif %}
+
+  </form>
+</div>
 {% endblock %}

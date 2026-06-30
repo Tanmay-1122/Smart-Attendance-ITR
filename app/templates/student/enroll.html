@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Face Enrollment</div>
+  <div class="page-sub">We'll take 5 photos in different angles for better accuracy.</div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="field">
+        <label class="label">Roll number</label>
+        <input type="text" id="roll_number" class="input" placeholder="e.g. CS2026-001" required>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step indicator -->
+  <div id="step-indicator" style="display:flex;gap:0;align-items:center;justify-content:center;margin-bottom:16px;padding:0 20px;">
+    <div class="step-dot active" data-step="1">1</div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step-dot" data-step="2">2</div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-dot" data-step="3">3</div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step-dot" data-step="4">4</div>
+    <div class="step-line" id="line-4"></div>
+    <div class="step-dot" data-step="5">5</div>
+  </div>
+
+  <div class="cam-wrap" style="margin-bottom:12px;">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="cam-border"></div>
+    <div id="guide-text" style="
+      position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,0.55); backdrop-filter:blur(8px);
+      color:#fff; font-size:.75rem; font-weight:600;
+      padding:6px 14px; border-radius:100px; letter-spacing:.03em; white-space:nowrap;
+      pointer-events:none;">
+      Look straight at the camera
+    </div>
+  </div>
+
+  <!-- Thumbnails -->
+  <div id="thumbnails" style="display:none;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;">
+    <div class="thumb-slot" id="thumb-1"></div>
+    <div class="thumb-slot" id="thumb-2"></div>
+    <div class="thumb-slot" id="thumb-3"></div>
+    <div class="thumb-slot" id="thumb-4"></div>
+    <div class="thumb-slot" id="thumb-5"></div>
+  </div>
+
+  <div id="status-msg" style="display:none;" class="alert"></div>
+
+  <div class="stack">
+    <button id="capture-btn" class="btn btn-success">Capture Photo 1/5</button>
+    <button id="retake-btn" class="btn btn-ghost" style="display:none;">Retake last photo</button>
+    <a href="/student/dashboard" class="btn btn-ghost">Back to dashboard</a>
+  </div>
+
+</div>
+
+<!-- Full-screen success overlay -->
+<div id="success-overlay" style="
+  display:none; position:fixed; inset:0; z-index:999;
+  background:#fff; flex-direction:column;
+  align-items:center; justify-content:center; padding:32px; text-align:center;">
+  <div style="width:72px;height:72px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <h2 style="font-size:1.4rem;font-weight:800;color:#0F172A;margin-bottom:8px;">Face Enrolled!</h2>
+  <p style="color:#475569;font-size:.9rem;max-width:280px;">Your face has been saved with 5 photos. The system will now recognize you during attendance scans.</p>
+  <a href="/student/dashboard" class="btn btn-primary" style="margin-top:28px;max-width:300px;">Go to dashboard</a>
+</div>
+
+<script>
+  const video      = document.getElementById('video');
+  const canvas     = document.getElementById('canvas');
+  const captureBtn = document.getElementById('capture-btn');
+  const retakeBtn  = document.getElementById('retake-btn');
+  const rollInput  = document.getElementById('roll_number');
+  const statusMsg  = document.getElementById('status-msg');
+  const guideText  = document.getElementById('guide-text');
+  const thumbsDiv  = document.getElementById('thumbnails');
+
+  const GUIDE_TEXTS = [
+    'Look straight at the camera',
+    'Turn slightly to your left',
+    'Turn slightly to your right',
+    'Tilt your head up slightly',
+    'Tilt your head down slightly'
+  ];
+
+  let photos = [];
+  let currentStep = 0;
+
+  navigator.mediaDevices
+    .getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } })
+    .then(stream => { video.srcObject = stream; })
+    .catch(err => showStatus('Camera unavailable: ' + err.message, 'danger'));
+
+  function updateUI() {
+    const dots = document.querySelectorAll('.step-dot');
+    dots.forEach((dot, i) => {
+      dot.className = 'step-dot';
+      if (i < currentStep) dot.classList.add('done');
+      else if (i === currentStep) dot.classList.add('active');
+    });
+
+    for (let i = 1; i <= 4; i++) {
+      const line = document.getElementById('line-' + i);
+      if (line) {
+        line.className = i < currentStep ? 'step-line done' : 'step-line';
+      }
+    }
+
+    guideText.textContent = GUIDE_TEXTS[currentStep] || '';
+    captureBtn.textContent = currentStep < 5 ? `Capture Photo ${currentStep + 1}/5` : 'Submit';
+
+    if (currentStep > 0) retakeBtn.style.display = '';
+    else retakeBtn.style.display = 'none';
+
+    thumbsDiv.style.display = photos.length > 0 ? 'flex' : 'none';
+    for (let i = 1; i <= 5; i++) {
+      const slot = document.getElementById('thumb-' + i);
+      if (i <= photos.length) {
+        slot.classList.add('filled');
+        slot.innerHTML = '<img src="' + photos[i-1] + '">';
+      } else {
+        slot.classList.remove('filled');
+        slot.innerHTML = '';
+      }
+    }
+  }
+
+  function capturePhoto() {
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
+
+  captureBtn.addEventListener('click', () => {
+    const roll = rollInput.value.trim();
+    if (!roll) { showStatus('Please enter your roll number first.', 'warning'); return; }
+
+    if (currentStep < 5) {
+      photos[currentStep] = capturePhoto();
+      currentStep++;
+      updateUI();
+      showStatus(`Photo ${currentStep}/5 captured! ${5 - currentStep} more to go.`, 'info');
+
+      if (currentStep === 5) {
+        captureBtn.textContent = 'Submit & Enroll';
+      }
+    } else {
+      submitEnrollment(roll);
+    }
+  });
+
+  retakeBtn.addEventListener('click', () => {
+    if (currentStep > 0) {
+      currentStep--;
+      photos.pop();
+      updateUI();
+      hideStatus();
+    }
+  });
+
+  function submitEnrollment(roll) {
+    showStatus('Processing 5 photos with dual AI models, please wait...', 'info');
+    captureBtn.disabled = true;
+    retakeBtn.disabled = true;
+
+    fetch('/student/save_embedding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: photos, roll_number: roll })
+    })
+    .then(r => r.json().then(d => ({ ok: r.ok, body: d })))
+    .then(res => {
+      captureBtn.disabled = false;
+      retakeBtn.disabled = false;
+      if (res.ok && res.body.success) {
+        if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+        const overlay = document.getElementById('success-overlay');
+        overlay.style.display = 'flex';
+      } else {
+        showStatus(res.body.error || 'Enrollment failed. Make sure your face is clearly visible in all photos.', 'danger');
+      }
+    })
+    .catch(e => {
+      captureBtn.disabled = false;
+      retakeBtn.disabled = false;
+      showStatus('Network error: ' + e.message, 'danger');
+    });
+  }
+
+  function showStatus(msg, type) {
+    statusMsg.textContent    = msg;
+    statusMsg.className      = 'alert alert-' + type;
+    statusMsg.style.display  = 'flex';
+  }
+
+  function hideStatus() {
+    statusMsg.style.display = 'none';
+  }
+
+  updateUI();
+</script>
+{% endblock %}

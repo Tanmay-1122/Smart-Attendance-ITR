@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero hero-wrapper" style="padding-right:88px;">
+    <div class="hero-label">Welcome back</div>
+    <div class="hero-name">{{ current_user.name }}</div>
+    <div class="hero-stats mt-2">
+      <div class="stat"><div class="stat-n">{{ total_present }}</div><div class="stat-l">Present</div></div>
+      <div class="stat"><div class="stat-n">{{ total_review }}</div><div class="stat-l">Review</div></div>
+      <div class="stat"><div class="stat-n">{{ total_absent }}</div><div class="stat-l">Absent</div></div>
+    </div>
+    <div class="hero-donut" style="position:absolute;top:16px;right:14px;">
+      <svg width="68" height="68" viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="6"/>
+        <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="6"
+                stroke-dasharray="175.93"
+                stroke-dashoffset="{{ (175.93 - (175.93 * percentage / 100)) | round(2) }}"
+                stroke-linecap="round" transform="rotate(-90 34 34)"/>
+        <text x="34" y="39" text-anchor="middle" fill="white"
+              font-size="13" font-weight="800" font-family="Inter,sans-serif">{{ percentage }}%</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- At-risk warning -->
+  {% if percentage > 0 and percentage < 75 %}
+  <div class="alert alert-danger mb-2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>Your attendance is <strong>{{ percentage }}%</strong>. The minimum required is 75%. Attend more classes to avoid exam restrictions.</span>
+  </div>
+  {% endif %}
+
+  <!-- Streak cards -->
+  <div class="stat-card">
+    <div class="streak-card">
+      <div class="streak-value">{{ streak }}</div>
+      <div class="streak-label">Current streak</div>
+    </div>
+    <div class="streak-card streak-best">
+      <div class="streak-value">{{ best_streak }}</div>
+      <div class="streak-label">Best streak</div>
+    </div>
+  </div>
+
+  <!-- Monthly Calendar -->
+  <div class="section-header">
+    <div class="section-label" style="margin-bottom:0;" id="cal-label">June 2026</div>
+    <div class="cal-legend">
+      <div class="cal-legend-dot" style="background:#16A34A;"></div>Present
+      <div class="cal-legend-dot" style="background:#F59E0B;"></div>Review
+      <div class="cal-legend-dot" style="background:#EF4444;"></div>Absent
+      <div class="cal-legend-dot" style="background:repeating-linear-gradient(45deg,#F8FAFC 0,#F8FAFC 2px,#E2E8F0 2px,#E2E8F0 4px);"></div>Sun
+    </div>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-body" style="padding:14px 12px;">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;">
+        {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+        <div style="text-align:center;font-size:.62rem;font-weight:700;color:var(--text-3);letter-spacing:.04em;padding-bottom:4px;">{{ d }}</div>
+        {% endfor %}
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="cal-tip" class="cal-tip"></div>
+
+  <!-- Enroll prompt -->
+  {% if not enrolled %}
+  <div class="enroll-prompt mb-2">
+    <div>
+      <div style="font-weight:600;font-size:.85rem;color:var(--warning);">Face not enrolled</div>
+      <div class="enroll-prompt-text">Register your face for AI attendance marking.</div>
+    </div>
+    <a href="/student/enroll" class="enroll-prompt-link">Enroll &rarr;</a>
+  </div>
+  {% endif %}
+
+  <!-- Class breakdown -->
+  {% if class_stats %}
+  <div class="section-label mb-2">Class breakdown</div>
+  <div class="card mb-2">
+    {% for cn, s in class_stats.items() %}
+    <div class="class-row">
+      <div class="class-row-header">
+        <div class="class-name">{{ cn }}</div>
+        <div class="class-pct"
+          style="color:{%- if s.pct >= 75 %}var(--success){%- elif s.pct >= 50 %}var(--warning){%- else %}var(--danger){%- endif %};">
+          {{ s.pct }}%
+        </div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill {%- if s.pct >= 75 %} good{%- elif s.pct >= 50 %} mid{%- else %} bad{%- endif %}"
+             style="width:{{ s.pct }}%;"></div>
+      </div>
+      <div class="class-detail">{{ s.present }} of {{ s.total }} classes attended</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Recent Records -->
+  <div class="section-label mb-2">Recent attendance</div>
+  {% if records %}
+  <div class="card" style="margin-bottom:10px;">
+    {% for r in records %}
+    <div class="record-item">
+      <div>
+        <div class="record-class">{{ r.class_name }}</div>
+        <div class="record-date">{{ r.date.strftime('%d %b %Y') if r.date else '' }}</div>
+      </div>
+      <span class="badge
+        {%- if r.status == 'PRESENT' %} badge-present
+        {%- elif r.status == 'REVIEW' %} badge-review
+        {%- else %} badge-absent{%- endif %}">
+        {{ r.status }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty" style="margin-bottom:10px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <p>No attendance records yet.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+(function () {
+  const DATA = {{ attendance_json | safe }};
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+  const today     = new Date(); today.setHours(0,0,0,0);
+  const year      = today.getFullYear();
+  const month     = today.getMonth();
+  const dim       = new Date(year, month+1, 0).getDate();
+  const firstDow  = new Date(year, month, 1).getDay();
+  const startOff  = (firstDow + 6) % 7;
+
+  document.getElementById('cal-label').textContent =
+    MONTHS[month] + ' ' + year;
+
+  const grid = document.getElementById('cal-grid');
+  const tip  = document.getElementById('cal-tip');
+
+  let HW_DATA = {};
+  fetch('/student/homework/calendar_data')
+    .then(r => r.json())
+    .then(d => { HW_DATA = d; renderCalendar(); });
+
+  function renderCalendar() {
+    grid.innerHTML = '';
+    for (let i = 0; i < startOff; i++) {
+      grid.appendChild(emptyCell());
+    }
+    for (let day = 1; day <= dim; day++) {
+      const iso = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      const dt = new Date(year, month, day);
+      grid.appendChild(dayCell(day, iso, dt));
+    }
+    const totalCells = startOff + dim;
+    const remainder  = totalCells % 7;
+    if (remainder !== 0) {
+      for (let i = 0; i < 7 - remainder; i++) {
+        grid.appendChild(emptyCell());
+      }
+    }
+  }
+
+  function emptyCell() {
+    const d = document.createElement('div');
+    d.className = 'cal-cell';
+    return d;
+  }
+
+  function dayCell(day, iso, dt) {
+    const isSun  = dt.getDay() === 0;
+    const isFut  = dt > today;
+    const isToday= dt.getTime() === today.getTime();
+    const status = DATA[iso] || null;
+    const hwList = HW_DATA[iso] || [];
+
+    const el = document.createElement('div');
+    el.className = 'cal-cell';
+
+    if (isSun) {
+      el.classList.add('cal-cell-sun');
+    } else if (isFut) {
+      el.classList.add('cal-cell-future');
+    } else {
+      if (status) {
+        el.classList.add('cal-cell-' + status.toLowerCase());
+      } else {
+        el.classList.add('cal-cell-empty');
+      }
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (e) => {
+        if (hwList.length > 0) {
+          window.location.href = '/student/homework/' + hwList[0].id;
+        } else {
+          showTip(e, iso, status, hwList);
+        }
+      });
+    }
+
+    if (hwList.length > 0 && !isSun) {
+      const dot = document.createElement('div');
+      dot.style.cssText = 'position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:#7C3AED;';
+      el.appendChild(dot);
+    }
+
+    if (isToday && !isSun) {
+      el.style.outline = '2.5px solid #1E1B4B';
+      el.style.outlineOffset = '2px';
+    }
+
+    el.textContent = day;
+    return el;
+  }
+
+  function showTip(e, iso, status, hwList) {
+    const dt  = new Date(iso + 'T00:00:00');
+    const lbl = dt.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    let html = '<strong>' + lbl + '</strong>';
+    if (status) {
+      html += '<br><strong style="color:' + statusColor(status) + ';">' + status + '</strong>';
+    } else {
+      html += '<br><span style="opacity:.65;">No record</span>';
+    }
+    if (hwList.length > 0) {
+      html += '<br><strong style="color:#7C3AED;margin-top:4px;display:inline-block;">' + hwList.length + ' homework</strong>';
+      hwList.forEach(function(hw) {
+        html += '<br><span style="opacity:.8;font-size:.7rem;">' + hw.title + ' (' + hw.class_name + ')</span>';
+      });
+    }
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    placeTip(e);
+  }
+  function placeTip(e) {
+    var x = e.clientX + 14, y = e.clientY - 14;
+    tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 16) + 'px';
+    tip.style.top  = Math.max(y, 6) + 'px';
+  }
+  function hideTip() { tip.style.display = 'none'; }
+  document.addEventListener('click', function(e) { if (!e.target.closest('#cal-grid')) hideTip(); });
+
+  function statusColor(s) {
+    return s === 'PRESENT' ? '#86EFAC' : s === 'REVIEW' ? '#FDE68A' : '#FCA5A5';
+  }
+})();
+</script>
+{% endblock %}

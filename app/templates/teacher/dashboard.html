@@ -1,27 +1,255 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="page">
 
-<h2>Teacher Dashboard</h2>
-<p>Upload 3 photos to take attendance</p>
+  <!-- Classes Section -->
+  {% if classes %}
+  <div class="section-header">
+    <div class="section-label" style="margin-bottom:0;">Your classes</div>
+    <a href="/teacher/classes" style="font-size:.78rem;font-weight:600;color:var(--brand);">Manage &rarr;</a>
+  </div>
+  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;">
+    {% for tc in classes %}
+    <div class="class-chip" data-name="{{ tc.name }}" onclick="selectClass(this)" style="
+      flex-shrink:0;padding:10px 16px;border-radius:10px;
+      border:1.5px solid {% if preselected == tc.name %}var(--brand){% else %}var(--border){% endif %};
+      background:{% if preselected == tc.name %}var(--brand-light){% else %}var(--surface){% endif %};
+      cursor:pointer;min-width:100px;text-align:center;
+      {% if preselected == tc.name %}box-shadow:0 2px 8px rgba(99,102,241,.15);{% endif %}
+    ">
+      <div style="font-weight:700;font-size:.85rem;color:var(--text);">{{ tc.name }}</div>
+      <div style="font-size:.68rem;color:var(--text-3);margin-top:2px;">{{ tc.students.count() }} students</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info mb-2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>No classes yet. <a href="/teacher/classes" style="font-weight:700;color:var(--brand);">Create a class</a> to get started.</span>
+  </div>
+  {% endif %}
 
-<form method="POST" action="/teacher/scan" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label>Class Name</label>
-        <input type="text" name="class_name" class="form-control" placeholder="e.g. CS101" required>
+  <!-- Steps indicator -->
+  <div id="step-indicator" style="margin-bottom:16px;">
+    <div class="section-header">
+      <div class="page-title" style="margin:0;" id="step-title">Capture Photo 1 of 3</div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <div class="step-dot" id="dot-1" style="width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(99,102,241,.2);"></div>
+        <div style="width:20px;height:2px;background:var(--border);border-radius:1px;" id="conn-1"></div>
+        <div class="step-dot" id="dot-2" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
+        <div style="width:20px;height:2px;background:var(--border);border-radius:1px;" id="conn-2"></div>
+        <div class="step-dot" id="dot-3" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
+      </div>
     </div>
-    <div class="mb-3">
-        <label>Photo 1</label>
-        <input type="file" name="photo1" class="form-control" accept="image/*" required>
-    </div>
-    <div class="mb-3">
-        <label>Photo 2</label>
-        <input type="file" name="photo2" class="form-control" accept="image/*" required>
-    </div>
-    <div class="mb-3">
-        <label>Photo 3</label>
-        <input type="file" name="photo3" class="form-control" accept="image/*" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Scan Attendance</button>
-</form>
+    <div class="page-sub" style="margin-bottom:0;" id="step-sub">Make sure all students are clearly visible in the frame.</div>
+  </div>
 
+  <!-- Camera -->
+  <div id="camera-section">
+    <div class="cam-wrap mb-2">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+      <div class="cam-border"></div>
+      <div id="guide-overlay" style="
+        position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+        background:rgba(0,0,0,0.55); backdrop-filter:blur(8px);
+        color:#fff; font-size:.75rem; font-weight:600;
+        padding:6px 14px; border-radius:100px; letter-spacing:.03em; white-space:nowrap;
+        pointer-events:none;">
+        <span id="guide-text">Frame the class — include all students</span>
+      </div>
+    </div>
+
+    <!-- Thumbnails -->
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <div id="thumb-1" class="thumb-slot"></div>
+      <div id="thumb-2" class="thumb-slot"></div>
+      <div id="thumb-3" class="thumb-slot"></div>
+    </div>
+
+    <button id="capture-btn" class="btn btn-primary">Capture photo 1</button>
+    <button id="retake-btn" class="btn btn-ghost" style="display:none; margin-top:8px;">Retake last photo</button>
+  </div>
+
+  <!-- Submit section -->
+  <div id="submit-section" style="display:none;">
+    <div class="card mb-3" style="overflow:hidden;">
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
+        <img id="prev-1" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+        <img id="prev-2" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+        <img id="prev-3" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+      </div>
+    </div>
+    <div class="alert alert-success" style="margin-bottom:14px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:1px;"><polyline points="20 6 9 17 4 12"/></svg>
+      3 photos captured. Enter the class name and run the scan.
+    </div>
+
+    <form method="POST" action="/teacher/scan" id="scan-form">
+      <div class="field mb-3">
+        <label class="label">Class name</label>
+        {% if classes %}
+        <select name="class_name" class="select" id="class-select" required>
+          <option value="" disabled {% if not preselected %}selected{% endif %}>Select a class</option>
+          {% for tc in classes %}
+          <option value="{{ tc.name }}" {% if preselected == tc.name %}selected{% endif %}>{{ tc.name }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input type="text" name="class_name" class="input" placeholder="No classes created yet" disabled>
+        {% endif %}
+      </div>
+      <input type="hidden" name="photo1_data" id="data-1">
+      <input type="hidden" name="photo2_data" id="data-2">
+      <input type="hidden" name="photo3_data" id="data-3">
+
+      <button type="submit" class="btn btn-primary" id="scan-btn">
+        <span id="scan-btn-text">Scan attendance</span>
+        <span id="scan-btn-loading" style="display:none;display:none;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="animation:spin .7s linear infinite;"><circle cx="12" cy="12" r="9" stroke-dasharray="30 56"/></svg>
+          Scanning faces...
+        </span>
+      </button>
+      <button type="button" class="btn btn-ghost" onclick="resetCapture()">Retake all photos</button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  const GUIDES = [
+    'Frame the class — include all students',
+    'Move to a different angle from photo 1',
+    'Final shot — different position again'
+  ];
+
+  let step = 1;
+  const photos = {};
+  const video  = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+
+  navigator.mediaDevices
+    .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(stream => { video.srcObject = stream; })
+    .catch(() => {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(e => { document.getElementById('step-sub').textContent = 'Camera unavailable: ' + e.message; });
+    });
+
+  document.getElementById('capture-btn').addEventListener('click', capture);
+
+  function capture() {
+    canvas.width  = video.videoWidth  || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+    photos[step] = dataUrl;
+
+    const slot = document.getElementById('thumb-' + step);
+    slot.innerHTML = '<img src="' + dataUrl + '" alt="Photo ' + step + '">';
+    slot.classList.add('filled');
+
+    document.getElementById('prev-' + step).src = dataUrl;
+    document.getElementById('data-' + step).value = dataUrl;
+
+    if (step < 3) {
+      step++;
+      updateUI();
+    } else {
+      showSubmit();
+    }
+  }
+
+  function updateUI() {
+    document.getElementById('step-title').textContent = 'Capture Photo ' + step + ' of 3';
+    document.getElementById('capture-btn').textContent = 'Capture photo ' + step;
+    document.getElementById('guide-text').textContent  = GUIDES[step - 1];
+    document.getElementById('retake-btn').style.display = step > 1 ? 'block' : 'none';
+    for (let i = 1; i <= 3; i++) {
+      const dot = document.getElementById('dot-' + i);
+      const conn = document.getElementById('conn-' + i);
+      if (i < step) {
+        dot.style.background = 'var(--success)';
+        dot.style.boxShadow = '0 0 0 3px rgba(22,163,74,.2)';
+      } else if (i === step) {
+        dot.style.background = 'var(--brand)';
+        dot.style.boxShadow = '0 0 0 3px rgba(99,102,241,.2)';
+      } else {
+        dot.style.background = 'var(--border)';
+        dot.style.boxShadow = 'none';
+      }
+      if (conn && i < step) {
+        conn.style.background = 'var(--success)';
+      } else if (conn) {
+        conn.style.background = 'var(--border)';
+      }
+    }
+  }
+
+  document.getElementById('retake-btn').addEventListener('click', function () {
+    step--;
+    photos[step] = null;
+    const slot = document.getElementById('thumb-' + step);
+    slot.innerHTML = '';
+    slot.classList.remove('filled');
+    document.getElementById('data-' + step).value = '';
+    updateUI();
+  });
+
+  function showSubmit() {
+    document.getElementById('camera-section').style.display   = 'none';
+    document.getElementById('step-indicator').style.display   = 'none';
+    document.getElementById('submit-section').style.display   = 'block';
+    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+  }
+
+  function resetCapture() {
+    step = 1;
+    for (let i = 1; i <= 3; i++) {
+      photos[i] = null;
+      document.getElementById('data-' + i).value = '';
+      const slot = document.getElementById('thumb-' + i);
+      slot.innerHTML = ''; slot.classList.remove('filled');
+    }
+    document.getElementById('submit-section').style.display = 'none';
+    document.getElementById('step-indicator').style.display = 'block';
+    document.getElementById('camera-section').style.display = 'block';
+    updateUI();
+
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
+      .then(stream => { video.srcObject = stream; })
+      .catch(() => {});
+  }
+
+  document.getElementById('scan-form').addEventListener('submit', function () {
+    const btn = document.getElementById('scan-btn');
+    const btnText = document.getElementById('scan-btn-text');
+    const btnLoading = document.getElementById('scan-btn-loading');
+    btn.disabled = true;
+    btn.style.opacity = '.7';
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline-flex';
+  });
+
+  function selectClass(el) {
+    document.querySelectorAll('.class-chip').forEach(c => {
+      c.style.borderColor = 'var(--border)';
+      c.style.background = 'var(--surface)';
+      c.style.boxShadow = 'none';
+    });
+    el.style.borderColor = 'var(--brand)';
+    el.style.background = 'var(--brand-light)';
+    el.style.boxShadow = '0 2px 8px rgba(99,102,241,.15)';
+    const sel = document.getElementById('class-select');
+    if (sel) {
+      sel.value = el.dataset.name;
+    }
+  }
+</script>
 {% endblock %}
