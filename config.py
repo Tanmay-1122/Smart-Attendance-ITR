@@ -10,6 +10,7 @@ if os.path.exists(_env_path):
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'smart-attendance-secret-key-998877')
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///attendance.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'app/static/uploads')
     MAX_CONTENT_LENGTH = 64 * 1024 * 1024  # 64 MB
 
