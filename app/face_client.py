@@ -26,8 +26,9 @@ def enroll_student(image_paths: list[str], student_id: int) -> dict:
     resp = requests.post(f"{HF_API_URL}/api/enroll", json={
         'photos': photos,
         'student_id': student_id,
-    }, timeout=120)
-    resp.raise_for_status()
+    }, timeout=300)
+    if not resp.ok:
+        raise RuntimeError(f"Face API error ({resp.status_code}): {resp.text}")
     return resp.json()
 
 
@@ -38,6 +39,7 @@ def scan_faces(image_paths: list[str], student_embeddings: dict) -> dict:
     resp = requests.post(f"{HF_API_URL}/api/scan", json={
         'photos': photos,
         'student_embeddings': student_embeddings,
-    }, timeout=120)
-    resp.raise_for_status()
+    }, timeout=300)
+    if not resp.ok:
+        raise RuntimeError(f"Face API error ({resp.status_code}): {resp.text}")
     return resp.json()
