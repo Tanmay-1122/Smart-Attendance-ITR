@@ -1,8 +1,6 @@
 import base64
 import json
 import datetime
-import cv2
-import numpy as np
 import os
 from collections import defaultdict
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
@@ -15,7 +13,6 @@ from ..ai_summary import summarize_homework, extract_text_from_file
 
 student_bp = Blueprint('student', __name__, url_prefix='/student')
 
-MODELS = ['ArcFace', 'Facenet512']
 
 @student_bp.route('/dashboard')
 @login_required
@@ -126,41 +123,38 @@ def save_embedding():
     if len(images_data) != 5:
         return jsonify({'error': 'Exactly 5 photos required'}), 400
 
-    embeddings = []
+    upload_dir = os.path.join('app', 'static', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
 
+    photo_paths = []
     for idx, image_data in enumerate(images_data):
         if ',' in image_data:
             image_data = image_data.split(',')[1]
-
         try:
             img_bytes = base64.b64decode(image_data)
-            nparr = np.frombuffer(img_bytes, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            path = os.path.join(upload_dir, f'enroll_{current_user.id}_{idx}.jpg')
+            with open(path, 'wb') as fh:
+                fh.write(img_bytes)
+            photo_paths.append(path)
         except Exception:
             return jsonify({'error': f'Failed to decode photo {idx+1}'}), 400
 
-        if img is None:
-            return jsonify({'error': f'Failed to decode photo {idx+1}'}), 400
+    try:
+        from ..face_client import enroll_student
+        result = enroll_student(photo_paths, current_user.id)
+        embeddings = result.get('embeddings', [])
+    except Exception as e:
+        return jsonify({'error': f'Enrollment failed: {str(e)}'}), 500
+    finally:
+        for p in photo_paths:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
 
-        model_embs = []
-        from deepface import DeepFace
-        for model in MODELS:
-            try:
-                objs = DeepFace.represent(
-                    img_path=img,
-                    model_name=model,
-                    enforce_detection=True
-                )
-                if objs:
-                    model_embs.append(np.array(objs[0]['embedding']))
-            except Exception as e:
-                print(f"Error with {model} on photo {idx+1}: {e}")
-
-        if not model_embs:
-            return jsonify({'error': f'No face detected in photo {idx+1}. Make sure your face is clearly visible.'}), 400
-
-        avg_emb = np.mean(model_embs, axis=0)
-        embeddings.append(avg_emb.tolist())
+    if not embeddings:
+        return jsonify({'error': 'No face detected in any photo. Make sure your face is clearly visible.'}), 400
 
     student = Student.query.filter_by(user_id=current_user.id).first()
     if not student:
@@ -172,7 +166,7 @@ def save_embedding():
     student.face_embedding = json.dumps(embeddings)
     db.session.commit()
 
-    return jsonify({'success': True, 'message': 'Face enrolled with 5 photos!'})
+    return jsonify({'success': True, 'message': f'Face enrolled with {len(embeddings)} photos!'})
 
 
 @student_bp.route('/classes')

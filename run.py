@@ -1,8 +1,3 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
 import ssl
 from app import create_app
 app = create_app()

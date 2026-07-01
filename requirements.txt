@@ -2,14 +2,10 @@ flask
 flask-sqlalchemy
 flask-login
 flask-wtf
-deepface
-mtcnn
-opencv-python-headless
-tensorflow==2.18.1
-tf-keras
 Pillow
 werkzeug
 numpy
 pandas
 gunicorn
 psycopg2-binary
+requests

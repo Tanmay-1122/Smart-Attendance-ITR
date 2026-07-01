@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+numpy
+opencv-python-headless
+retina-face
+deepface
+tf-keras
+tensorflow==2.18.1
+Pillow

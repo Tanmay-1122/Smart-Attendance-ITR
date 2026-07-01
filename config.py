@@ -20,6 +20,7 @@ class Config:
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', globals().get('TELEGRAM_BOT_TOKEN', ''))
     TELEGRAM_GROUP_ID  = os.environ.get('TELEGRAM_GROUP_ID', globals().get('TELEGRAM_GROUP_ID', ''))
     GOOGLE_AI_KEY      = os.environ.get('GOOGLE_AI_KEY', globals().get('GOOGLE_AI_KEY', ''))
+    HF_FACE_API_URL    = os.environ.get('HF_FACE_API_URL', '')
 
     # Face recognition thresholds
     FACE_THRESH_HIGH = 0.70

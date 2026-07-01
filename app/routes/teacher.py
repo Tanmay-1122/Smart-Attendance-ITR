@@ -169,8 +169,53 @@ def scan():
 
     results = []
     try:
-        from ..face_engine.voting import process_three_photos
-        results = process_three_photos(photos, class_name, class_id=tc.id)
+        import json
+        from ..face_client import scan_faces
+
+        student_embeddings = {}
+        enrolled_students = StudentClass.query.filter_by(class_id=tc.id).all()
+        for sc in enrolled_students:
+            student = sc.student
+            if student and student.face_embedding:
+                try:
+                    emb_data = json.loads(student.face_embedding)
+                    if emb_data and isinstance(emb_data[0], list):
+                        student_embeddings[student.id] = emb_data
+                    else:
+                        student_embeddings[student.id] = [emb_data]
+                except Exception:
+                    pass
+
+        if not student_embeddings:
+            flash('No enrolled students with face data found.')
+            return redirect(url_for('teacher.dashboard'))
+
+        api_result = scan_faces(photos, student_embeddings)
+
+        names = {}
+        for sc in enrolled_students:
+            student = sc.student
+            if student and student.user:
+                names[student.id] = student.user.name
+
+        rolls = {}
+        for sc in enrolled_students:
+            student = sc.student
+            if student:
+                rolls[student.id] = student.roll_number
+
+        for r in api_result.get('results', []):
+            sid = r['student_id']
+            results.append({
+                'student_id': sid,
+                'name': names.get(sid, 'Unknown'),
+                'roll_number': rolls.get(sid, ''),
+                'enrolled_class': class_name,
+                'status': r['status'],
+                'best_score': r['best_score'],
+                'seen_in': r['seen_in'],
+            })
+
         print(f"[SCAN] Scan complete — {len(results)} result(s)")
     except Exception as e:
         import traceback
