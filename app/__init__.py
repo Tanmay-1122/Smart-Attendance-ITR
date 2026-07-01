@@ -42,4 +42,31 @@ def create_app():
         from .models import ChatMessage
         db.create_all()
 
+        # Ensure is_admin column exists on user table (handles upgrades)
+        try:
+            db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+            if 'sqlite' in db_url:
+                result = db.session.execute(
+                    db.text("PRAGMA table_info(user)")
+                )
+                columns = [row[1] for row in result]
+                if 'is_admin' not in columns:
+                    db.session.execute(
+                        db.text("ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0")
+                    )
+                    db.session.commit()
+                    print("[INIT] Added is_admin column to user table")
+            elif 'postgresql' in db_url:
+                result = db.session.execute(
+                    db.text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='is_admin'")
+                )
+                if not result.fetchone():
+                    db.session.execute(
+                        db.text("ALTER TABLE \"user\" ADD COLUMN is_admin BOOLEAN DEFAULT FALSE")
+                    )
+                    db.session.commit()
+                    print("[INIT] Added is_admin column to user table")
+        except Exception as e:
+            print(f"[INIT] Migration check: {e}")
+
     return app

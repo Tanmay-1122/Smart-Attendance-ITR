@@ -24,7 +24,6 @@ def login():
             admin_emails = current_app.config.get('ADMIN_EMAILS', [])
             if user.email in admin_emails and not user.is_admin:
                 user.is_admin = True
-                from .. import db
                 db.session.commit()
 
             login_user(user)
