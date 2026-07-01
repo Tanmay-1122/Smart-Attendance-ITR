@@ -22,6 +22,37 @@
     </div>
   </div>
 
+  <!-- Face Recognition Enrollment (For Students Only) -->
+  {% if current_user.role == 'student' %}
+  <div class="card mb-3">
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div>
+        <div class="label" style="margin-bottom:6px;">Face Recognition</div>
+        <div>
+          {% if current_user.student and current_user.student.face_embedding %}
+          <span class="badge badge-present">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Enrolled
+          </span>
+          {% else %}
+          <span class="badge badge-absent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Not Enrolled
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        {% if current_user.student and current_user.student.face_embedding %}
+        <a href="{{ url_for('student.enroll') }}" class="btn btn-ghost btn-sm" style="margin:0;display:inline-block;width:auto;">Re-enroll Face</a>
+        {% else %}
+        <a href="{{ url_for('student.enroll') }}" class="btn btn-primary btn-sm" style="margin:0;display:inline-block;width:auto;">Enroll Face</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <form method="POST" action="/auth/profile" enctype="multipart/form-data">
 
     <!-- Photo Upload -->
