@@ -5,7 +5,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass
 from .. import db
-from ..face_engine.voting import process_three_photos
 from ..telegram.bot import send_homework, get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
 import pandas as pd
@@ -170,6 +169,7 @@ def scan():
 
     results = []
     try:
+        from ..face_engine.voting import process_three_photos
         results = process_three_photos(photos, class_name, class_id=tc.id)
         print(f"[SCAN] Scan complete — {len(results)} result(s)")
     except Exception as e:

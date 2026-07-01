@@ -12,7 +12,6 @@ from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentC
 from .. import db
 from ..telegram.bot import get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
-from deepface import DeepFace
 
 student_bp = Blueprint('student', __name__, url_prefix='/student')
 
@@ -144,6 +143,7 @@ def save_embedding():
             return jsonify({'error': f'Failed to decode photo {idx+1}'}), 400
 
         model_embs = []
+        from deepface import DeepFace
         for model in MODELS:
             try:
                 objs = DeepFace.represent(
