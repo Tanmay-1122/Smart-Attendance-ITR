@@ -327,6 +327,151 @@ def export():
     return response
 
 
+@teacher_bp.route('/student-panel')
+@login_required
+def student_panel():
+    all_students = Student.query.all()
+
+    my_classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.created_at.desc()).all()
+
+    class_data = []
+    for tc in my_classes:
+        enrollments = StudentClass.query.filter_by(class_id=tc.id).all()
+        enrolled_students = []
+        for sc in enrollments:
+            if sc.student and sc.student.user:
+                enrolled_students.append(sc.student)
+        class_data.append({
+            'class': tc,
+            'students': enrolled_students,
+            'count': len(enrolled_students)
+        })
+
+    enrolled_student_ids = set()
+    for tc in my_classes:
+        for sc in StudentClass.query.filter_by(class_id=tc.id).all():
+            enrolled_student_ids.add(sc.student_id)
+
+    unenrolled = [s for s in all_students if s.id not in enrolled_student_ids]
+
+    return render_template('teacher/student_panel.html',
+                           all_students=all_students,
+                           class_data=class_data,
+                           unenrolled=unenrolled)
+
+
+@teacher_bp.route('/student-panel/enroll', methods=['POST'])
+@login_required
+def panel_enroll_student():
+    student_id = request.form.get('student_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    if not student_id or not class_id:
+        flash('Invalid request.')
+        return redirect(url_for('teacher.student_panel'))
+
+    tc = db.get_or_404(TeacherClass, class_id)
+    if tc.teacher_id != current_user.id:
+        flash('Access denied.')
+        return redirect(url_for('teacher.student_panel'))
+
+    student = db.get_or_404(Student, student_id)
+    existing = StudentClass.query.filter_by(student_id=student_id, class_id=class_id).first()
+    if existing:
+        flash('Student is already enrolled in this class.')
+        return redirect(url_for('teacher.student_panel'))
+
+    existing_any = StudentClass.query.filter_by(student_id=student_id).first()
+    if existing_any:
+        flash('Student is already enrolled in another class. Remove them first.')
+        return redirect(url_for('teacher.student_panel'))
+
+    sc = StudentClass(student_id=student_id, class_id=class_id)
+    db.session.add(sc)
+    db.session.commit()
+    flash(f'{student.user.name} enrolled in {tc.name}.')
+    return redirect(url_for('teacher.student_panel'))
+
+
+@teacher_bp.route('/student-panel/unenroll', methods=['POST'])
+@login_required
+def panel_unenroll_student():
+    student_id = request.form.get('student_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    if not student_id or not class_id:
+        flash('Invalid request.')
+        return redirect(url_for('teacher.student_panel'))
+
+    tc = db.get_or_404(TeacherClass, class_id)
+    if tc.teacher_id != current_user.id:
+        flash('Access denied.')
+        return redirect(url_for('teacher.student_panel'))
+
+    sc = StudentClass.query.filter_by(student_id=student_id, class_id=class_id).first()
+    if sc:
+        db.session.delete(sc)
+        db.session.commit()
+        flash('Student removed from class.')
+    return redirect(url_for('teacher.student_panel'))
+
+
+@teacher_bp.route('/student-panel/delete/<int:student_id>', methods=['POST'])
+@login_required
+def panel_delete_student(student_id):
+    student = db.get_or_404(Student, student_id)
+    user = student.user
+    name = user.name if user else 'Unknown'
+
+    StudentClass.query.filter_by(student_id=student.id).delete()
+    AttendanceRecord.query.filter_by(student_id=student.id).delete()
+    db.session.delete(student)
+    if user:
+        db.session.delete(user)
+    db.session.commit()
+    flash(f'Student account "{name}" has been deleted. They can re-register if needed.')
+    return redirect(url_for('teacher.student_panel'))
+
+
+@teacher_bp.route('/attendance')
+@login_required
+def attendance_records():
+    class_name = request.args.get('class_name', '').strip()
+    my_classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
+
+    if not class_name:
+        class_stats = []
+        for tc in my_classes:
+            records = AttendanceRecord.query.filter_by(class_name=tc.name).all()
+            dates = sorted(set(r.date for r in records if r.date), reverse=True)
+            present = sum(1 for r in records if r.status == 'PRESENT')
+            review = sum(1 for r in records if r.status == 'REVIEW')
+            absent = sum(1 for r in records if r.status == 'ABSENT')
+            class_stats.append({
+                'class': tc,
+                'total_records': len(records),
+                'sessions': len(dates),
+                'present': present,
+                'review': review,
+                'absent': absent,
+            })
+        return render_template('teacher/attendance.html', classes=my_classes, class_stats=class_stats)
+
+    tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+    if not tc:
+        flash('Invalid class.')
+        return redirect(url_for('teacher.attendance_records'))
+
+    records = AttendanceRecord.query.filter_by(class_name=class_name).order_by(AttendanceRecord.date.desc()).all()
+
+    by_date = {}
+    for r in records:
+        d = r.date
+        if d not in by_date:
+            by_date[d] = []
+        by_date[d].append(r)
+
+    return render_template('teacher/attendance_detail.html', tc=tc, by_date=by_date, total_records=len(records))
+
+
 @teacher_bp.route('/homework', methods=['GET', 'POST'])
 @login_required
 def homework():

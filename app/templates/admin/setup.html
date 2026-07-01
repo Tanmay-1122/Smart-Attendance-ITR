@@ -4,42 +4,35 @@
   <div class="auth-header">
     <div class="auth-logo-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
     </div>
     <h1>SmartAttend</h1>
-    <p>AI-powered attendance management</p>
+    <p>First-time admin setup</p>
   </div>
 
   <div class="auth-sheet">
-    <div class="sheet-title">Create account</div>
-    <div class="sheet-sub">Fill in your details to get started</div>
+    <div class="sheet-title">Create admin account</div>
+    <div class="sheet-sub">This page is only available when no admins exist. After setup, it will be disabled.</div>
 
-    <form method="POST" action="/auth/register">
+    <form method="POST" action="/admin/setup">
       <div class="field auth-field">
         <label class="label">Full name</label>
         <svg class="auth-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <input type="text" name="name" class="input" placeholder="Jane Smith" required autocomplete="name">
+        <input type="text" name="name" class="input" placeholder="Your name" required>
       </div>
       <div class="field auth-field">
         <label class="label">Email address</label>
         <svg class="auth-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-        <input type="email" name="email" class="input" placeholder="you@university.edu" required autocomplete="email">
+        <input type="email" name="email" class="input" placeholder="you@university.edu" required>
       </div>
       <div class="field auth-field">
         <label class="label">Password</label>
         <svg class="auth-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <input type="password" name="password" class="input" placeholder="Create a strong password" required autocomplete="new-password">
+        <input type="password" name="password" class="input" placeholder="Create a strong password" required>
       </div>
-      <div class="field">
-        <label class="label" style="font-size:.78rem;color:var(--text-3);">
-          Note: Only admins can grant teacher access. Contact an admin after registering.
-        </label>
-      </div>
-      <button type="submit" class="btn btn-primary mt-3">Create account</button>
+      <button type="submit" class="btn btn-primary mt-3">Create admin account</button>
     </form>
 
     <div class="auth-switch">

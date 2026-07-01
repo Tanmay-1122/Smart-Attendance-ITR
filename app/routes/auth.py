@@ -19,8 +19,18 @@ def login():
         user     = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password, password):
+            # Auto-grant admin if email is in ADMIN_EMAILS config
+            from flask import current_app
+            admin_emails = current_app.config.get('ADMIN_EMAILS', [])
+            if user.email in admin_emails and not user.is_admin:
+                user.is_admin = True
+                from .. import db
+                db.session.commit()
+
             login_user(user)
-            if user.role == 'teacher':
+            if user.is_admin:
+                return redirect(url_for('admin.dashboard'))
+            elif user.role == 'teacher':
                 return redirect(url_for('teacher.dashboard'))
             else:
                 return redirect(url_for('student.dashboard'))
@@ -36,7 +46,6 @@ def register():
         name     = request.form['name']
         email    = request.form['email']
         password = request.form['password']
-        role     = request.form['role']
 
         existing = User.query.filter_by(email=email).first()
         if existing:
@@ -47,11 +56,11 @@ def register():
             name     = name,
             email    = email,
             password = generate_password_hash(password),
-            role     = role
+            role     = 'student'
         )
         db.session.add(new_user)
         db.session.commit()
-        flash('Account created! Please login.')
+        flash('Account created! Please login. Note: Only admins can grant teacher access.')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')

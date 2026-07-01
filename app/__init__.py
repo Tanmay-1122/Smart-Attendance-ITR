@@ -23,11 +23,13 @@ def create_app():
     from .routes.student import student_bp
     from .routes.teacher import teacher_bp
     from .routes.notes   import notes_bp
+    from .routes.admin   import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(teacher_bp)
     app.register_blueprint(notes_bp)
+    app.register_blueprint(admin_bp)
 
     # Root redirect to login page
     from flask import redirect, url_for

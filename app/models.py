@@ -9,6 +9,7 @@ class User(UserMixin, db.Model):
     email         = db.Column(db.String(100), unique=True)
     password      = db.Column(db.String(200))
     role          = db.Column(db.String(10))   # 'student' or 'teacher'
+    is_admin      = db.Column(db.Boolean, default=False)
     profile_photo = db.Column(db.String(200), nullable=True)  # filename in uploads/
 
     @property

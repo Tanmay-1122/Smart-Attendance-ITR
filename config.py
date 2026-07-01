@@ -38,3 +38,6 @@ class Config:
     FACE_MIN_SIZE    = 80
     FACE_MAX_TILT    = 30
     FACE_BLUR_THRESH = 50
+
+    # Admin emails — comma-separated list of emails that get admin on first login
+    ADMIN_EMAILS = [e.strip() for e in os.environ.get('ADMIN_EMAILS', '').split(',') if e.strip()]
