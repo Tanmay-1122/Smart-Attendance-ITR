@@ -9,25 +9,25 @@ _model_lock = None
 
 def _ensure_models_loaded():
     global _ARCFACE_MODEL, _FACENET_MODEL, _model_lock
-    if _ARCFACE_MODEL is not None:
+    if _ARCFACE_MODEL is not None and _FACENET_MODEL is not None:
         return
 
     import threading
     _model_lock = threading.Lock()
 
     with _model_lock:
-        if _ARCFACE_MODEL is not None:
-            return
-        DeepFace.build_model(model_name='ArcFace')
-        _ARCFACE_MODEL = True
-        DeepFace.build_model(model_name='Facenet512')
-        _FACENET_MODEL = True
+        if _ARCFACE_MODEL is None:
+            DeepFace.build_model(model_name='ArcFace')
+            _ARCFACE_MODEL = True
+        if _FACENET_MODEL is None:
+            DeepFace.build_model(model_name='Facenet512')
+            _FACENET_MODEL = True
 
 
 def _get_embedding(face_crop):
     _ensure_models_loaded()
-
-    embeddings = []
+    
+    embs = []
     for model_name in ['ArcFace', 'Facenet512']:
         try:
             objs = DeepFace.represent(
@@ -37,30 +37,21 @@ def _get_embedding(face_crop):
                 detector_backend='skip',
             )
             if objs:
-                embeddings.append(np.array(objs[0]['embedding'], dtype=np.float32))
+                emb = np.array(objs[0]['embedding'], dtype=np.float32)
+                norm = np.linalg.norm(emb)
+                if norm > 0:
+                    emb = emb / norm
+                embs.append(emb)
         except Exception:
             pass
 
-    if not embeddings:
-        return None
-    return np.mean(embeddings, axis=0)
+    if len(embs) == 2:
+        return np.concatenate(embs)
+    return None
 
 
 def _get_arcface_embedding(face_crop):
-    """Faster single-model embedding for batch matching."""
-    _ensure_models_loaded()
-    try:
-        objs = DeepFace.represent(
-            img_path=face_crop,
-            model_name='ArcFace',
-            enforce_detection=False,
-            detector_backend='skip',
-        )
-        if objs:
-            return np.array(objs[0]['embedding'], dtype=np.float32)
-    except Exception:
-        pass
-    return None
+    return _get_embedding(face_crop)
 
 
 def clear_model_cache():

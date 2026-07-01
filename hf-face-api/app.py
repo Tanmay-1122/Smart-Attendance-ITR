@@ -21,13 +21,15 @@ _facenet_loaded = False
 
 def _load_models():
     global _arcface_loaded, _facenet_loaded
-    if _arcface_loaded:
+    if _arcface_loaded and _facenet_loaded:
         return
     from deepface import DeepFace
-    DeepFace.build_model(model_name='ArcFace')
-    _arcface_loaded = True
-    DeepFace.build_model(model_name='Facenet512')
-    _facenet_loaded = True
+    if not _arcface_loaded:
+        DeepFace.build_model(model_name='ArcFace')
+        _arcface_loaded = True
+    if not _facenet_loaded:
+        DeepFace.build_model(model_name='Facenet512')
+        _facenet_loaded = True
 
 
 def _decode_image(b64: str) -> np.ndarray:
@@ -165,12 +167,13 @@ def _enhance_glasses(face_crop: np.ndarray) -> np.ndarray:
 
 def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
     from deepface import DeepFace
-    embeddings = []
     tmp_path = None
     try:
         fd, tmp_path = tempfile.mkstemp(suffix='.jpg')
         os.close(fd)
         cv2.imwrite(tmp_path, face_crop)
+        
+        embs = []
         for model_name in ['ArcFace', 'Facenet512']:
             try:
                 objs = DeepFace.represent(
@@ -180,39 +183,27 @@ def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
                     detector_backend='skip',
                 )
                 if objs:
-                    embeddings.append(np.array(objs[0]['embedding'], dtype=np.float32))
+                    emb = np.array(objs[0]['embedding'], dtype=np.float32)
+                    norm = np.linalg.norm(emb)
+                    if norm > 0:
+                        emb = emb / norm
+                    embs.append(emb)
                     print(f"[EMBED] {model_name} OK, dim={len(objs[0]['embedding'])}")
             except Exception as e:
                 print(f"[EMBED] {model_name} failed: {e}")
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-    if not embeddings:
-        return None
-    return np.mean(embeddings, axis=0)
-
-
-def _get_arcface_embedding(face_crop: np.ndarray) -> np.ndarray | None:
-    from deepface import DeepFace
-    tmp_path = None
-    try:
-        fd, tmp_path = tempfile.mkstemp(suffix='.jpg')
-        os.close(fd)
-        cv2.imwrite(tmp_path, face_crop)
-        objs = DeepFace.represent(
-            img_path=tmp_path,
-            model_name='ArcFace',
-            enforce_detection=False,
-            detector_backend='skip',
-        )
-        if objs:
-            return np.array(objs[0]['embedding'], dtype=np.float32)
+        
+        if len(embs) == 2:
+            return np.concatenate(embs)
     except Exception as e:
-        print(f"[EMBED] ArcFace batch failed: {e}")
+        print(f"[EMBED] Failed to generate concatenated embedding: {e}")
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
     return None
+
+
+def _get_arcface_embedding(face_crop: np.ndarray) -> np.ndarray | None:
+    return _get_embedding(face_crop)
 
 
 def _cosine_match(face_emb, stored_matrix, stored_norms, student_ids):
