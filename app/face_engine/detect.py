@@ -51,8 +51,8 @@ def extract_faces(image):
 
         angle = 0
         if left_eye is not None and right_eye is not None:
-            dY = right_eye[1] - left_eye[1]
-            dX = right_eye[0] - left_eye[0]
+            dY = left_eye[1] - right_eye[1]
+            dX = left_eye[0] - right_eye[0]
             angle = np.degrees(np.arctan2(dY, dX))
 
             if abs(angle) > 35:

@@ -4,6 +4,8 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 import io
 import gc
+import os
+import tempfile
 import base64
 import json
 import numpy as np
@@ -47,7 +49,7 @@ def _preprocess(image: np.ndarray) -> np.ndarray:
 
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
     cl = clahe.apply(l)
     return cv2.cvtColor(cv2.merge((cl, a, b)), cv2.COLOR_LAB2BGR)
 
@@ -55,73 +57,90 @@ def _preprocess(image: np.ndarray) -> np.ndarray:
 def _detect_faces(image: np.ndarray) -> list:
     from retinaface import RetinaFace
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    detections = RetinaFace.detect_faces(image_rgb, threshold=0.9)
+    detections = RetinaFace.detect_faces(image_rgb, threshold=0.5)
 
     if not detections or (isinstance(detections, dict) and not detections):
+        print("[DETECT] No faces found by RetinaFace")
         return []
 
     if isinstance(detections, dict):
         detections = [detections[k] for k in detections if isinstance(detections[k], dict) and 'facial_area' in detections[k]]
 
+    print(f"[DETECT] RetinaFace found {len(detections)} face(s)")
     faces = []
     h, w = image.shape[:2]
 
     for det in detections:
         confidence = det.get('score', det.get('confidence', 0.0))
-        if confidence < 0.90:
+        fa = det.get('facial_area', None)
+        print(f"[DETECT] face score={confidence:.3f} facial_area={fa}")
+        if confidence < 0.50:
             continue
 
-        fa = det.get('facial_area', None)
         if fa is None:
             continue
 
         x1, y1, x2, y2 = fa[0], fa[1], fa[2], fa[3]
         fw, fh = x2 - x1, y2 - y1
-        if fw < 50 or fh < 50:
+        if fw < 40 or fh < 40:
+            print(f"[DETECT] skipped: face too small {fw}x{fh}")
             continue
 
         landmarks = det.get('landmarks', {})
         left_eye = landmarks.get('left_eye', None)
         right_eye = landmarks.get('right_eye', None)
+        print(f"[DETECT] landmarks: left_eye={left_eye}, right_eye={right_eye}")
 
         angle = 0
         if left_eye and right_eye:
-            dY = right_eye[1] - left_eye[1]
-            dX = right_eye[0] - left_eye[0]
+            dY = left_eye[1] - right_eye[1]
+            dX = left_eye[0] - right_eye[0]
             angle = np.degrees(np.arctan2(dY, dX))
+            print(f"[DETECT] head angle={angle:.1f} degrees")
             if abs(angle) > 35:
+                print(f"[DETECT] skipped: head angle too large {angle:.1f}")
                 continue
             eye_center = ((left_eye[0] + right_eye[0]) / 2.0, (left_eye[1] + right_eye[1]) / 2.0)
             M = cv2.getRotationMatrix2D(eye_center, angle, 1.0)
             rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_LINEAR)
         else:
+            print(f"[DETECT] no eye landmarks found, using original image")
             rotated = image
 
         pad = int(min(fw, fh) * 0.12)
         cx1, cy1 = max(0, x1 - pad), max(0, y1 - pad)
         cx2, cy2 = min(w, x2 + pad), min(h, y2 + pad)
+        print(f"[DETECT] crop region: ({cx1},{cy1}) to ({cx2},{cy2}), size={cx2-cx1}x{cy2-cy1}")
 
-        if (cx2 - cx1) >= 50 and (cy2 - cy1) >= 50:
+        if (cx2 - cx1) >= 40 and (cy2 - cy1) >= 40:
             crop = rotated[cy1:cy2, cx1:cx2]
             faces.append({
                 'crop': crop,
                 'confidence': float(confidence),
                 'bbox': [int(cx1), int(cy1), int(cx2), int(cy2)],
             })
+            print(f"[DETECT] face added successfully")
+        else:
+            print(f"[DETECT] skipped: crop too small {cx2-cx1}x{cy2-cy1}")
 
     return faces
 
 
 def _check_quality(face_crop: np.ndarray) -> dict:
     h, w = face_crop.shape[:2]
-    if w < 50 or h < 50:
+    print(f"[QUALITY] crop size: {w}x{h}")
+    if w < 40 or h < 40:
+        print(f"[QUALITY] REJECTED: face_too_small {w}x{h}")
         return {'valid': False, 'reason': 'face_too_small'}
 
     gray = cv2.cvtColor(face_crop, cv2.COLOR_BGR2GRAY)
     laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-    if laplacian_var < 25:
+    print(f"[QUALITY] laplacian_var={laplacian_var:.2f}")
+    if laplacian_var < 10:
+        print(f"[QUALITY] REJECTED: face_blurry var={laplacian_var:.2f}")
         return {'valid': False, 'reason': 'face_blurry'}
 
+    print(f"[QUALITY] PASSED")
     return {'valid': True, 'reason': ''}
 
 
@@ -147,21 +166,27 @@ def _enhance_glasses(face_crop: np.ndarray) -> np.ndarray:
 def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
     from deepface import DeepFace
     embeddings = []
-    for model_name in ['ArcFace', 'Facenet512']:
-        try:
-            # Encode crop to temp file for deepface
-            _, buf = cv2.imencode('.jpg', face_crop)
-            tmp = io.BytesIO(buf.tobytes())
-            objs = DeepFace.represent(
-                img_path=face_crop,
-                model_name=model_name,
-                enforce_detection=False,
-                detector_backend='skip',
-            )
-            if objs:
-                embeddings.append(np.array(objs[0]['embedding'], dtype=np.float32))
-        except Exception:
-            pass
+    tmp_path = None
+    try:
+        fd, tmp_path = tempfile.mkstemp(suffix='.jpg')
+        os.close(fd)
+        cv2.imwrite(tmp_path, face_crop)
+        for model_name in ['ArcFace', 'Facenet512']:
+            try:
+                objs = DeepFace.represent(
+                    img_path=tmp_path,
+                    model_name=model_name,
+                    enforce_detection=False,
+                    detector_backend='skip',
+                )
+                if objs:
+                    embeddings.append(np.array(objs[0]['embedding'], dtype=np.float32))
+                    print(f"[EMBED] {model_name} OK, dim={len(objs[0]['embedding'])}")
+            except Exception as e:
+                print(f"[EMBED] {model_name} failed: {e}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
     if not embeddings:
         return None
     return np.mean(embeddings, axis=0)
@@ -169,17 +194,24 @@ def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
 
 def _get_arcface_embedding(face_crop: np.ndarray) -> np.ndarray | None:
     from deepface import DeepFace
+    tmp_path = None
     try:
+        fd, tmp_path = tempfile.mkstemp(suffix='.jpg')
+        os.close(fd)
+        cv2.imwrite(tmp_path, face_crop)
         objs = DeepFace.represent(
-            img_path=face_crop,
+            img_path=tmp_path,
             model_name='ArcFace',
             enforce_detection=False,
             detector_backend='skip',
         )
         if objs:
             return np.array(objs[0]['embedding'], dtype=np.float32)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[EMBED] ArcFace batch failed: {e}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
     return None
 
 
@@ -199,7 +231,7 @@ class DetectRequest(BaseModel):
 
 
 class EnrollRequest(BaseModel):
-    photos: list[str]  # list of 3 base64 images
+    photos: list[str]  # list of base64 images (1-5)
     student_id: int
 
 
@@ -241,11 +273,12 @@ def detect_faces(req: DetectRequest):
 def enroll_student(req: EnrollRequest):
     _load_models()
 
-    if len(req.photos) < 3:
-        raise HTTPException(400, "Exactly 3 photos required")
+    if len(req.photos) < 1:
+        raise HTTPException(400, "At least 1 photo required")
 
     embeddings = []
     for idx, photo_b64 in enumerate(req.photos):
+        print(f"[ENROLL] Processing photo {idx+1}/{len(req.photos)}")
         try:
             img = _decode_image(photo_b64)
         except Exception:
@@ -253,10 +286,12 @@ def enroll_student(req: EnrollRequest):
 
         img = _preprocess(img)
         faces = _detect_faces(img)
+        print(f"[ENROLL] Photo {idx+1}: detected {len(faces)} face(s)")
 
         valid_crops = []
         for f in faces:
             quality = _check_quality(f['crop'])
+            print(f"[ENROLL] Photo {idx+1}: quality check result = {quality}")
             if quality['valid']:
                 crop = f['crop']
                 # detect glasses heuristic
@@ -270,6 +305,7 @@ def enroll_student(req: EnrollRequest):
                     crop = _enhance_glasses(crop)
                 valid_crops.append(crop)
 
+        print(f"[ENROLL] Photo {idx+1}: {len(valid_crops)} valid crop(s)")
         if not valid_crops:
             raise HTTPException(400, f"No clear face detected in photo {idx+1}")
 
