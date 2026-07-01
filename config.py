@@ -12,7 +12,16 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///attendance.db')
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
+    if SQLALCHEMY_DATABASE_URI and 'postgresql' in SQLALCHEMY_DATABASE_URI:
+        if '?' not in SQLALCHEMY_DATABASE_URI:
+            SQLALCHEMY_DATABASE_URI += '?sslmode=require'
+        elif 'sslmode' not in SQLALCHEMY_DATABASE_URI:
+            SQLALCHEMY_DATABASE_URI += '&sslmode=require'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'app/static/uploads')
     MAX_CONTENT_LENGTH = 64 * 1024 * 1024  # 64 MB
 
