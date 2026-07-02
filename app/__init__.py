@@ -18,6 +18,9 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
+    from flask_wtf.csrf import CSRFProtect
+    csrf = CSRFProtect(app)
+
     # register blueprints
     from .routes.auth    import auth_bp
     from .routes.student import student_bp
