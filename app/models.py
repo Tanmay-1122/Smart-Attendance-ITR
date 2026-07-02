@@ -75,6 +75,18 @@ class Homework(db.Model):
     created_at      = db.Column(db.DateTime, default=datetime.datetime.now)
     due_date        = db.Column(db.Date, nullable=True)
 
+class PrivateMessage(db.Model):
+    __tablename__ = 'private_message'
+    id            = db.Column(db.Integer, primary_key=True)
+    sender_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    text          = db.Column(db.Text, nullable=False)
+    sent_at       = db.Column(db.DateTime, default=datetime.datetime.now)
+    read          = db.Column(db.Boolean, default=False)
+
+    sender   = db.relationship('User', foreign_keys=[sender_id], backref='sent_private_messages')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_private_messages')
+
 class TeacherClass(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

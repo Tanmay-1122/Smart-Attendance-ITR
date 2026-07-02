@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="app">
+  <!-- Chat header -->
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <a href="/auth/user/{{ other_user.id }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+        <div class="chat-avatar" style="margin-top:0;">
+          {% if other_user.profile_photo %}
+          <img src="/static/uploads/{{ other_user.profile_photo }}" alt="">
+          {% else %}
+          {{ other_user.name[0]|upper }}
+          {% endif %}
+        </div>
+        <div>
+          <div class="chat-header-title">{{ other_user.name }}</div>
+          <div class="chat-header-sub">{{ other_user.role|capitalize }}</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-box" id="chat-box">
+    <div class="chat-empty" id="chat-empty" style="display:none;">
+      <div class="chat-empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <p style="color:var(--text-tertiary);font-size:.88rem;">Start a conversation with {{ other_user.name }}</p>
+    </div>
+  </div>
+
+  <!-- Compose -->
+  <div class="chat-compose">
+    <div class="chat-input-row">
+      <textarea class="chat-textarea" id="msg-input" placeholder="Type a message..." rows="1"></textarea>
+      <button class="chat-send-btn" id="send-btn" onclick="sendMessage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const OTHER_USER_ID = {{ other_user.id }};
+const chatBox = document.getElementById('chat-box');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const chatEmpty = document.getElementById('chat-empty');
+let lastMessageId = 0;
+let loading = false;
+
+// Load messages
+async function loadMessages() {
+  if (loading) return;
+  loading = true;
+  try {
+    const res = await fetch(`/chat/api/${OTHER_USER_ID}/messages`);
+    const data = await res.json();
+    if (data.messages.length === 0) {
+      chatEmpty.style.display = 'flex';
+    } else {
+      chatEmpty.style.display = 'none';
+      data.messages.forEach(appendMessage);
+      lastMessageId = data.messages[data.messages.length - 1].id;
+      scrollToBottom();
+    }
+  } catch(e) { console.error(e); }
+  loading = false;
+}
+
+// Append a message to chat
+function appendMessage(msg) {
+  const div = document.createElement('div');
+  div.className = `chat-msg ${msg.is_mine ? 'chat-msg-mine' : ''}`;
+  div.innerHTML = `
+    <div class="chat-avatar" style="margin-top:18px;">
+      ${msg.is_mine ? '{{ current_user.name[0]|upper }}' : '{{ other_user.name[0]|upper }}'}
+    </div>
+    <div class="chat-msg-content">
+      <div class="chat-msg-meta ${msg.is_mine ? 'chat-msg-meta-r' : ''}">${msg.sent_at}</div>
+      <div class="bubble ${msg.is_mine ? 'b-mine' : 'b-theirs'}">${escapeHtml(msg.text)}</div>
+    </div>
+  `;
+  chatBox.appendChild(div);
+}
+
+// Send message
+async function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  sendBtn.disabled = true;
+  try {
+    const res = await fetch(`/chat/api/${OTHER_USER_ID}/send`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content},
+      body: JSON.stringify({text})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      chatEmpty.style.display = 'none';
+      appendMessage(data.message);
+      lastMessageId = data.message.id;
+      msgInput.value = '';
+      msgInput.style.height = 'auto';
+      scrollToBottom();
+    }
+  } catch(e) { console.error(e); }
+  sendBtn.disabled = false;
+}
+
+// Auto-resize textarea
+msgInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+});
+
+// Enter to send
+msgInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function scrollToBottom() {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+// Poll for new messages
+setInterval(async function() {
+  try {
+    const res = await fetch(`/chat/api/${OTHER_USER_ID}/messages`);
+    const data = await res.json();
+    if (data.messages.length > 0) {
+      const newLast = data.messages[data.messages.length - 1].id;
+      if (newLast > lastMessageId) {
+        chatEmpty.style.display = 'none';
+        data.messages.forEach(m => {
+          if (m.id > lastMessageId) appendMessage(m);
+        });
+        lastMessageId = newLast;
+        scrollToBottom();
+      }
+    }
+  } catch(e) {}
+}, 3000);
+
+// Init
+loadMessages();
+msgInput.focus();
+</script>
+
+<style>
+#app {
+  display: flex; flex-direction: column;
+  height: calc(100vh - var(--bar-h));
+  max-width: 720px; margin: 0 auto;
+  background: var(--surface); overflow: hidden;
+}
+</style>
+{% endblock %}
