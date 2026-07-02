@@ -6,3 +6,6 @@ instance/
 *.pyc
 *.pem
 .DS_Store
+.env
+.env.*
+!.env/.env.example
