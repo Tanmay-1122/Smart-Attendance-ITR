@@ -174,7 +174,10 @@
 
     fetch('/student/save_embedding', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+      },
       body: JSON.stringify({ images: photos, roll_number: roll })
     })
     .then(r => r.json().then(d => ({ ok: r.ok, body: d })))

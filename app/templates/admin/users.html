@@ -57,27 +57,32 @@
           {% if user.id != current_user.id %}
           {% if user.role == 'student' %}
           <form method="POST" action="/admin/promote/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Promote {{ user.name }} to teacher?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-primary" style="font-size:.68rem;padding:4px 10px;">Promote</button>
           </form>
           {% elif user.role == 'teacher' %}
           <form method="POST" action="/admin/demote/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Demote {{ user.name }} to student? Their classes will be removed.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--warning);border-color:var(--warning);">Demote</button>
           </form>
           {% endif %}
 
           {% if not user.is_admin %}
           <form method="POST" action="/admin/toggle-admin/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Grant admin privileges to {{ user.name }}?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:#F59E0B;border-color:#F59E0B;">Make Admin</button>
           </form>
           {% else %}
           {% if user.id != current_user.id %}
           <form method="POST" action="/admin/toggle-admin/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Revoke admin privileges from {{ user.name }}?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--text-3);border-color:var(--text-3);">Remove Admin</button>
           </form>
           {% endif %}
           {% endif %}
 
           <form method="POST" action="/admin/delete/{{ user.id }}" style="margin:0;" onsubmit="return confirm('DELETE {{ user.name }}? This cannot be undone.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--danger);border-color:var(--danger);">Delete</button>
           </form>
           {% else %}

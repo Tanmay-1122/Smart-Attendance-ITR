@@ -126,6 +126,7 @@
           <span style="font-size:.7rem;padding:3px 8px;border-radius:20px;background:rgba(245,158,11,.1);color:var(--warning);font-weight:600;">Not Enrolled</span>
           {% if class_data %}
           <form method="POST" action="/teacher/student-panel/enroll" style="margin:0;display:flex;gap:4px;align-items:center;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="student_id" value="{{ student.id }}">
             <select name="class_id" class="input" style="padding:4px 8px;font-size:.72rem;width:auto;min-width:100px;">
               {% for cd in class_data %}
@@ -136,6 +137,7 @@
           </form>
           {% endif %}
           <form method="POST" action="/teacher/student-panel/delete/{{ student.id }}" style="margin:0;" onsubmit="return confirm('Delete {{ student.user.name }}\\'s account? They will need to re-register.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger);font-size:.7rem;padding:4px 10px;">Delete</button>
           </form>
         </div>

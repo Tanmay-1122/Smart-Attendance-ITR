@@ -288,7 +288,11 @@ async function sendMessage() {
   }
 
   try {
-    const res  = await fetch('/notes/send', { method: 'POST', body: fd });
+    const res  = await fetch('/notes/send', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+      body: fd
+    });
     const data = await res.json();
     if (data.ok) {
       if (data.type === 'clear') {
