@@ -15,6 +15,7 @@
   </div>
 
   <form method="POST" action="/teacher/save_attendance" id="save-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <input type="hidden" name="class_name" value="{{ class_name }}">
 
     {% if results %}

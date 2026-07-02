@@ -10,6 +10,7 @@ import base64
 import json
 import numpy as np
 import cv2
+from PIL import Image, ImageOps
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -36,8 +37,10 @@ def _decode_image(b64: str) -> np.ndarray:
     if ',' in b64:
         b64 = b64.split(',', 1)[1]
     raw = base64.b64decode(b64)
-    arr = np.frombuffer(raw, np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    pil_img = Image.open(io.BytesIO(raw))
+    pil_img = ImageOps.exif_transpose(pil_img)
+    pil_img = pil_img.convert('RGB')
+    img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
     if img is None:
         raise ValueError("Failed to decode image")
     return img

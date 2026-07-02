@@ -75,6 +75,7 @@
           <div style="display:flex;gap:6px;flex-shrink:0;">
             <span style="font-size:.7rem;padding:3px 8px;border-radius:20px;background:rgba(34,197,94,.1);color:var(--success);font-weight:600;">Enrolled</span>
             <form method="POST" action="/teacher/student-panel/unenroll" style="margin:0;" onsubmit="return confirm('Remove {{ student.user.name }} from {{ cd.class.name }}?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="student_id" value="{{ student.id }}">
               <input type="hidden" name="class_id" value="{{ cd.class.id }}">
               <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger);font-size:.7rem;padding:3px 8px;">Remove</button>

@@ -9,6 +9,7 @@
   <div class="card mb-3">
     <div class="card-body">
       <form method="POST" action="/teacher/classes/add">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="field">
           <label class="label">Class name</label>
           <input type="text" name="name" class="input" placeholder="e.g. CS101" required>

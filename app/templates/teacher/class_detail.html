@@ -62,6 +62,7 @@
           {% endif %}
         </div>
         <form method="POST" action="/teacher/classes/{{ tc.id }}/unenroll/{{ s.student.id }}" style="margin:0;" onsubmit="return confirm('Remove {{ s.student.user.name }} from {{ tc.name }}?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger);font-size:.72rem;padding:5px 10px;">Remove</button>
         </form>
       </div>
