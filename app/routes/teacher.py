@@ -7,6 +7,7 @@ from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentC
 from .. import db
 from ..telegram.bot import send_homework, get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
+from werkzeug.utils import secure_filename
 import pandas as pd
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
@@ -497,7 +498,7 @@ def homework():
         file_path = None
         file_name = None
         if file and file.filename:
-            file_name = file.filename
+            file_name = secure_filename(file.filename)
             file_path = os.path.join(upload_dir, file_name)
             file.save(file_path)
 

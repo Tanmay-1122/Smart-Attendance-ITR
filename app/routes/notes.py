@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
 from ..telegram.bot import (send_text_message, send_photo_message,
                              send_file_message, send_voice_message,
                              get_file_download_url, delete_old_messages,
@@ -61,7 +62,7 @@ def send():
 
     # ── Voice ──
     if voice and voice.filename:
-        path = os.path.join(udir, f"voice_{voice.filename}")
+        path = os.path.join(udir, f"voice_{secure_filename(voice.filename)}")
         voice.save(path)
         try:
             send_voice_message(path, current_user.name)
@@ -71,7 +72,7 @@ def send():
 
     # ── Photo (+ optional text caption) ──
     if photo and photo.filename:
-        path = os.path.join(udir, photo.filename)
+        path = os.path.join(udir, secure_filename(photo.filename))
         photo.save(path)
         try:
             send_photo_message(path, photo.filename, current_user.name, caption=text)
@@ -81,7 +82,7 @@ def send():
 
     # ── Generic file ──
     if file and file.filename:
-        path = os.path.join(udir, file.filename)
+        path = os.path.join(udir, secure_filename(file.filename))
         file.save(path)
         try:
             send_file_message(path, file.filename, current_user.name)
