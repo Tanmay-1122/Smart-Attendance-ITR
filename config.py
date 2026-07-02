@@ -1,10 +1,10 @@
 import os
+from dotenv import load_dotenv
 
-# Load from .env/config.py if it exists
-_env_path = os.path.join(os.path.dirname(__file__), '.env', 'config.py')
+# Load .env file if it exists
+_env_path = os.path.join(os.path.dirname(__file__), '.env', '.env')
 if os.path.exists(_env_path):
-    with open(_env_path) as f:
-        exec(compile(f.read(), _env_path, 'exec'), globals())
+    load_dotenv(_env_path)
 
 
 class Config:
