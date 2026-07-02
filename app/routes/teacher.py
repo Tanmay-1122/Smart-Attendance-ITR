@@ -422,6 +422,16 @@ def panel_delete_student(student_id):
     user = student.user
     name = user.name if user else 'Unknown'
 
+    # Check that the student is enrolled in at least one of this teacher's classes
+    my_class_ids = [tc.id for tc in TeacherClass.query.filter_by(teacher_id=current_user.id).all()]
+    enrolled_in_my_class = StudentClass.query.filter(
+        StudentClass.student_id == student.id,
+        StudentClass.class_id.in_(my_class_ids)
+    ).first()
+    if not enrolled_in_my_class:
+        flash('You can only delete students enrolled in your classes.')
+        return redirect(url_for('teacher.student_panel'))
+
     StudentClass.query.filter_by(student_id=student.id).delete()
     AttendanceRecord.query.filter_by(student_id=student.id).delete()
     db.session.delete(student)
