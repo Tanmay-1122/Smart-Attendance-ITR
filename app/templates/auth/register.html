@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="auth-root">
+  <!-- Extra cosmic orbs for auth -->
+  <div style="position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(196,181,253,0.2) 0%,transparent 70%);top:30%;left:50%;filter:blur(60px);pointer-events:none;animation:cosmicDrift3 20s ease-in-out infinite alternate;"></div>
+  <div style="position:absolute;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.08) 0%,transparent 60%);top:15%;left:20%;filter:blur(50px);pointer-events:none;animation:cosmicDrift4 16s ease-in-out infinite alternate;"></div>
+  <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,0.15) 0%,transparent 65%);bottom:30%;right:15%;filter:blur(40px);pointer-events:none;animation:cosmicDrift1 24s ease-in-out infinite alternate;"></div>
+
+  <!-- Decorative SVG waves -->
+  <svg style="position:absolute;bottom:0;left:0;width:100%;height:120px;pointer-events:none;z-index:0;" viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <path d="M0,80 C360,120 720,40 1080,80 C1260,100 1380,60 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.03)"/>
+    <path d="M0,90 C320,50 640,110 960,70 C1200,40 1360,90 1440,70 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.02)"/>
+  </svg>
+
   <div class="auth-header">
     <div class="auth-logo-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -36,7 +47,7 @@
         <input type="password" name="password" class="input" placeholder="Create a strong password" required autocomplete="new-password">
       </div>
       <div class="field">
-        <label class="label" style="font-size:.78rem;color:var(--text-3);">
+        <label class="label" style="font-size:.78rem;color:var(--text-tertiary);">
           Note: Only admins can grant teacher access. Contact an admin after registering.
         </label>
       </div>

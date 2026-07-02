@@ -305,12 +305,40 @@ button { font-family: inherit; }
 .cam-wrap video { width: 100%; height: 100%; object-fit: cover; }
 .cam-border { position: absolute; inset: 0; border-radius: var(--radius-lg); border: 2px solid rgba(99,102,241,0.5); pointer-events: none; }
 
-.auth-root { min-height: 100vh; background: linear-gradient(135deg, #4338CA 0%, #6366F1 30%, #7C3AED 60%, #6366F1 100%); display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
-.auth-root::before, .auth-root::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; animation: float 6s ease-in-out infinite; }
-.auth-root::before { width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); top: -80px; right: -60px; }
-.auth-root::after { width: 220px; height: 220px; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); bottom: 20%; left: -50px; animation-delay: 3s; }
+.auth-root {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4338ca 50%, #6366f1 75%, #7c3aed 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+  display: flex; flex-direction: column; align-items: center;
+  position: relative; overflow: hidden;
+}
+.auth-root::before, .auth-root::after {
+  content: ''; position: absolute; border-radius: 50%; pointer-events: none;
+}
+.auth-root::before {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%);
+  top: -15%; right: -10%;
+  animation: cosmicDrift1 18s ease-in-out infinite alternate;
+}
+.auth-root::after {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 65%);
+  bottom: -10%; left: -8%;
+  animation: cosmicDrift2 22s ease-in-out infinite alternate;
+}
 .auth-header { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px 24px; position: relative; z-index: 1; animation: fadeInUp 0.6s var(--ease-out); }
-.auth-logo-box { width: 72px; height: 72px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-md); animation: float 4s ease-in-out infinite; }
+.auth-logo-box {
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-xl);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--space-md);
+  animation: float 4s ease-in-out infinite;
+  box-shadow: 0 0 40px rgba(139,92,246,0.3), 0 0 80px rgba(99,102,241,0.15);
+}
 .auth-logo-box svg { width: 32px; height: 32px; color: #fff; }
 .auth-header h1 { font-size: 1.7rem; font-weight: 800; color: #fff; letter-spacing: -0.03em; }
 .auth-header p { font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 6px; }
@@ -460,4 +488,106 @@ button { font-family: inherit; }
   .chat-msg-content { max-width: 82%; }
   .chat-avatar { width: 26px; height: 26px; font-size: 0.65rem; }
   .chat-compose { padding: 10px 12px 14px; }
+}
+
+/* ══════════════════════════════════════════
+   Cosmic Background Art — Claude Fable Style
+   ══════════════════════════════════════════ */
+
+/* Gradient mesh on body */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(99,102,241,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 85% 70%, rgba(124,58,237,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 50% 90%, rgba(139,92,246,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Noise grain texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.025;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Floating orbs */
+.cosmic-orbs {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cosmic-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.cosmic-orb--1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%);
+  top: -10%; left: -5%;
+  animation: cosmicDrift1 25s ease-in-out infinite alternate;
+}
+
+.cosmic-orb--2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 65%);
+  bottom: -15%; right: -8%;
+  animation: cosmicDrift2 30s ease-in-out infinite alternate;
+}
+
+.cosmic-orb--3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 60%);
+  top: 40%; left: 60%;
+  animation: cosmicDrift3 20s ease-in-out infinite alternate;
+}
+
+.cosmic-orb--4 {
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 55%);
+  top: 70%; left: 10%;
+  animation: cosmicDrift4 28s ease-in-out infinite alternate;
+}
+
+@keyframes cosmicDrift1 {
+  to { transform: translate(6vw, 4vh) scale(1.1); }
+}
+@keyframes cosmicDrift2 {
+  to { transform: translate(-5vw, -6vh) scale(0.95); }
+}
+@keyframes cosmicDrift3 {
+  to { transform: translate(3vw, 5vh) scale(1.05); }
+}
+@keyframes cosmicDrift4 {
+  to { transform: translate(4vw, -3vh) scale(1.08); }
+}
+
+/* Sparkle dots */
+.sparkle {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: rgba(99,102,241,0.3);
+  animation: sparkleFloat 6s ease-in-out infinite;
+}
+.sparkle:nth-child(2) { animation-delay: -2s; animation-duration: 8s; }
+.sparkle:nth-child(3) { animation-delay: -4s; animation-duration: 7s; }
+
+@keyframes sparkleFloat {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-20px) scale(1); }
 }
