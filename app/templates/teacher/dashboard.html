@@ -407,7 +407,29 @@
       setContStatus('Select a class first', 'var(--warning, #f59e0b)');
       return;
     }
+
+    setContStatus('Checking Face API...', '#f59e0b');
+
+    // First check if the Face Recognition API is available
+    fetch('/teacher/api/face_api_status')
+      .then(r => r.json())
+      .then(status => {
+        if (!status.available) {
+          setContStatus('Face Recognition API not configured. Set HF_FACE_API_URL.', '#ef4444');
+          return;
+        }
+        startContCamera();
+      })
+      .catch(() => {
+        setContStatus('Could not check Face API status.', '#ef4444');
+      });
+  }
+
+  function startContCamera() {
     contScanning = true;
+    document.getElementById('cont-start-btn').style.display = 'none';
+    document.getElementById('cont-stop-btn').style.display  = 'inline-flex';
+    setContStatus('Starting camera...', '#f59e0b');
 
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } } })
@@ -424,14 +446,12 @@
             contTimer = setInterval(captureAndIdentify, 1800);
           })
           .catch(e => {
-            setContStatus('Camera unavailable: ' + e.message, '#ef4444');
+            setContStatus('Camera access denied. Use HTTPS or localhost.', '#ef4444');
             contScanning = false;
+            document.getElementById('cont-start-btn').style.display = 'inline-flex';
+            document.getElementById('cont-stop-btn').style.display  = 'none';
           });
       });
-
-    document.getElementById('cont-start-btn').style.display = 'none';
-    document.getElementById('cont-stop-btn').style.display  = 'inline-flex';
-    setContStatus('Starting camera...', '#f59e0b');
   }
 
   function stopContinuousScan() {

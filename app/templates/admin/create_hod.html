@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <a href="/admin" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+    <div class="page-title" style="margin:0;">Create / Promote HOD</div>
+  </div>
+  <div class="page-sub">Create a new HOD account or promote an existing teacher to HOD</div>
+
+  <!-- Option 1: Promote existing teacher -->
+  {% if teachers %}
+  <div class="card mb-3">
+    <div class="section-label" style="margin-bottom:8px;">Promote existing teacher to HOD</div>
+    <form method="POST" action="/admin/create-hod">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="action" value="existing">
+      <div class="field mb-2">
+        <label class="label">Select teacher</label>
+        <select name="user_id" class="select" required>
+          <option value="" disabled selected>Choose a teacher...</option>
+          {% for t in teachers %}
+          <option value="{{ t.id }}">{{ t.name }} &mdash; {{ t.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field mb-3">
+        <label class="label">Assign department</label>
+        <select name="department_id" class="select" required>
+          <option value="" disabled selected>Choose department...</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}">{{ d.name }} ({{ d.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Promote to HOD</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="alert alert-info mb-2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>No eligible teachers available. All teachers are already assigned to a department.</span>
+  </div>
+  {% endif %}
+
+  <!-- Option 2: Create new HOD account -->
+  <div class="card">
+    <div class="section-label" style="margin-bottom:8px;">Create new HOD account</div>
+    <form method="POST" action="/admin/create-hod">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="action" value="new">
+      <div class="field mb-2">
+        <label class="label">Full name</label>
+        <input type="text" name="name" class="input" placeholder="Dr. Name" required>
+      </div>
+      <div class="field mb-2">
+        <label class="label">Email</label>
+        <input type="email" name="email" class="input" placeholder="hod@university.edu" required>
+      </div>
+      <div class="field mb-2">
+        <label class="label">Password</label>
+        <input type="password" name="password" class="input" placeholder="Create a password" required>
+      </div>
+      <div class="field mb-3">
+        <label class="label">Department</label>
+        <select name="department_id" class="select" required>
+          <option value="" disabled selected>Choose department...</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}">{{ d.name }} ({{ d.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Create HOD Account</button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

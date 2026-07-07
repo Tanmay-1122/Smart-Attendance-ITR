@@ -52,7 +52,17 @@ def identify_face(image_path: str, student_embeddings: dict) -> dict:
     resp = requests.post(f"{HF_API_URL}/api/identify", json={
         'photo': photo,
         'student_embeddings': student_embeddings,
-    }, timeout=120)
+    }, timeout=15)
     if not resp.ok:
         raise RuntimeError(f"Face API error ({resp.status_code}): {resp.text}")
     return resp.json()
+
+
+def check_api_health() -> bool:
+    if not HF_API_URL:
+        return False
+    try:
+        resp = requests.get(f"{HF_API_URL}/health", timeout=5)
+        return resp.ok
+    except Exception:
+        return False

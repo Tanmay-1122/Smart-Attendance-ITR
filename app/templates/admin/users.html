@@ -6,7 +6,7 @@
     <a href="/admin" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
     <div class="page-title" style="margin:0;">Manage Users</div>
   </div>
-  <div class="page-sub">Promote students to teachers, manage admin access, or remove accounts</div>
+  <div class="page-sub">Promote students to teachers, manage HODs, Principal, admin access, or remove accounts</div>
 
   <!-- Filters -->
   <div class="card mb-3" style="padding:14px 18px;">
@@ -16,6 +16,8 @@
         <option value="">All roles</option>
         <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Students</option>
         <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>Teachers</option>
+        <option value="hod" {% if role_filter == 'hod' %}selected{% endif %}>HODs</option>
+        <option value="principal" {% if role_filter == 'principal' %}selected{% endif %}>Principals</option>
         <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admins</option>
       </select>
       <button type="submit" class="btn btn-primary" style="font-size:.8rem;">Filter</button>
@@ -48,7 +50,11 @@
           {% if user.is_admin %}
           <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(245,158,11,.12);color:#F59E0B;font-weight:700;">Admin</span>
           {% endif %}
-          {% if user.role == 'teacher' %}
+          {% if user.role == 'hod' %}
+          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(139,92,246,.12);color:#8B5CF6;font-weight:600;">HOD{% if user.department %} &middot; {{ user.department.code }}{% endif %}</span>
+          {% elif user.role == 'principal' %}
+          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(245,158,11,.12);color:#F59E0B;font-weight:600;">Principal</span>
+          {% elif user.role == 'teacher' %}
           <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(99,102,241,.1);color:var(--primary);font-weight:600;">Teacher</span>
           {% else %}
           <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(34,197,94,.1);color:var(--success);font-weight:600;">Student</span>
@@ -64,6 +70,11 @@
           <form method="POST" action="/admin/demote/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Demote {{ user.name }} to student? Their classes will be removed.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--warning);border-color:var(--warning);">Demote</button>
+          </form>
+          {% elif user.role == 'hod' %}
+          <form method="POST" action="/admin/demote-hod/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Demote {{ user.name }} from HOD to teacher?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:#8B5CF6;border-color:#8B5CF6;">Demote</button>
           </form>
           {% endif %}
 

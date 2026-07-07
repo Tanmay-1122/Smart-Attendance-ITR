@@ -3,15 +3,27 @@ import datetime
 from . import db, login_manager
 from flask_login import UserMixin
 
+class Department(db.Model):
+    id   = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+
+    def __repr__(self):
+        return f'<Department {self.name}>'
+
+
 class User(UserMixin, db.Model):
     id            = db.Column(db.Integer, primary_key=True)
     name          = db.Column(db.String(100))
     email         = db.Column(db.String(100), unique=True)
     password      = db.Column(db.String(200))
-    role          = db.Column(db.String(10))   # 'student' or 'teacher'
+    role          = db.Column(db.String(10))   # 'student', 'teacher', 'hod', 'principal'
     is_admin      = db.Column(db.Boolean, default=False)
     profile_photo = db.Column(db.String(200), nullable=True)  # filename in uploads/
     email_notifications = db.Column(db.Boolean, default=True)
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=True)
+
+    department = db.relationship('Department', backref='members', foreign_keys=[department_id])
 
     @property
     def avatar_url(self):

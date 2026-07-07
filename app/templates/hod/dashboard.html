@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">{{ dept.name }}</div>
+  <div class="page-sub">Department of {{ dept.name }} &middot; {{ dept.code }}</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+    <div class="streak-card">
+      <div class="streak-value">{{ total_teachers }}</div>
+      <div class="streak-label">Teachers</div>
+    </div>
+    <div class="streak-card">
+      <div class="streak-value">{{ total_students }}</div>
+      <div class="streak-label">Students</div>
+    </div>
+    <div class="streak-card">
+      <div class="streak-value">{{ total_classes }}</div>
+      <div class="streak-label">Classes</div>
+    </div>
+  </div>
+
+  <!-- Today's Attendance -->
+  <div class="section-label" style="margin-bottom:8px;">Today's Attendance &mdash; {{ today }}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+    <div style="padding:16px;border-radius:10px;background:rgba(34,197,94,.08);border:1.5px solid var(--success);text-align:center;">
+      <div style="font-size:1.8rem;font-weight:800;color:var(--success);">{{ today_present }}</div>
+      <div style="font-size:.78rem;color:var(--text-2);font-weight:600;">Present</div>
+    </div>
+    <div style="padding:16px;border-radius:10px;background:rgba(239,68,68,.08);border:1.5px solid var(--danger);text-align:center;">
+      <div style="font-size:1.8rem;font-weight:800;color:var(--danger);">{{ today_absent }}</div>
+      <div style="font-size:.78rem;color:var(--text-2);font-weight:600;">Absent</div>
+    </div>
+  </div>
+
+  <!-- Attendance by Class -->
+  {% if class_attendance %}
+  <div class="section-label" style="margin-bottom:8px;">Attendance by Class</div>
+  <div class="card" style="overflow:hidden;margin-bottom:16px;">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>Class</th><th>Total</th><th>Present</th><th>Attendance %</th></tr>
+        </thead>
+        <tbody>
+          {% for ca in class_attendance %}
+          <tr>
+            <td style="font-weight:600;">{{ ca.name }}</td>
+            <td>{{ ca.total }}</td>
+            <td>{{ ca.present }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+                  <div style="height:100%;width:{{ ca.pct }}%;border-radius:3px;background:{% if ca.pct >= 75 %}var(--success){% elif ca.pct >= 50 %}var(--warning){% else %}var(--danger){% endif %};"></div>
+                </div>
+                <span style="font-weight:700;font-size:.82rem;{% if ca.pct >= 75 %}color:var(--success){% elif ca.pct >= 50 %}color:var(--warning){% else %}color:var(--danger){% endif %};">{{ ca.pct }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card empty mb-2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <p>No attendance data for today.</p>
+  </div>
+  {% endif %}
+
+  <!-- Pending Leave Requests -->
+  {% if pending_leaves %}
+  <div class="section-label" style="margin-bottom:8px;">Pending Leave Requests</div>
+  <div class="card" style="overflow:hidden;">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>Student</th><th>Class</th><th>Dates</th><th>Reason</th></tr>
+        </thead>
+        <tbody>
+          {% for lv in pending_leaves %}
+          <tr>
+            <td style="font-weight:600;">{{ lv.student.user.name }}</td>
+            <td>{{ lv.class_name }}</td>
+            <td style="font-size:.78rem;">{{ lv.start_date }} &rarr; {{ lv.end_date }}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ lv.reason }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

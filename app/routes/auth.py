@@ -34,6 +34,10 @@ def login():
                 return redirect(url_for('admin.dashboard'))
             elif user.role == 'teacher':
                 return redirect(url_for('teacher.dashboard'))
+            elif user.role == 'hod':
+                return redirect(url_for('hod.dashboard'))
+            elif user.role == 'principal':
+                return redirect(url_for('principal.dashboard'))
             else:
                 return redirect(url_for('student.dashboard'))
         else:
@@ -62,7 +66,7 @@ def register():
         )
         db.session.add(new_user)
         db.session.commit()
-        flash('Account created! Please login. Note: Only admins can grant teacher access.')
+        flash('Account created! Please login. Note: Only admins can grant teacher/HOD/Principal access.')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')

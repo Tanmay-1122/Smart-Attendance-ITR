@@ -170,6 +170,7 @@ def _enhance_glasses(face_crop: np.ndarray) -> np.ndarray:
 
 def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
     from deepface import DeepFace
+    img_for_deepface = None
     tmp_path = None
     try:
         fd, tmp_path = tempfile.mkstemp(suffix='.jpg')
@@ -179,8 +180,9 @@ def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
         embs = []
         for model_name in ['ArcFace', 'Facenet512']:
             try:
+                # Try passing numpy array directly (newer DeepFace versions)
                 objs = DeepFace.represent(
-                    img_path=tmp_path,
+                    img_path=face_crop,
                     model_name=model_name,
                     enforce_detection=False,
                     detector_backend='skip',
@@ -191,17 +193,40 @@ def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
                     if norm > 0:
                         emb = emb / norm
                     embs.append(emb)
-                    print(f"[EMBED] {model_name} OK, dim={len(objs[0]['embedding'])}")
+                    print(f"[EMBED] {model_name} OK (direct), dim={len(objs[0]['embedding'])}")
+                    continue
             except Exception as e:
-                print(f"[EMBED] {model_name} failed: {e}")
+                print(f"[EMBED] {model_name} direct failed ({e}), trying file path...")
+                try:
+                    objs = DeepFace.represent(
+                        img_path=tmp_path,
+                        model_name=model_name,
+                        enforce_detection=False,
+                        detector_backend='skip',
+                    )
+                    if objs:
+                        emb = np.array(objs[0]['embedding'], dtype=np.float32)
+                        norm = np.linalg.norm(emb)
+                        if norm > 0:
+                            emb = emb / norm
+                        embs.append(emb)
+                        print(f"[EMBED] {model_name} OK (file), dim={len(objs[0]['embedding'])}")
+                except Exception as e2:
+                    print(f"[EMBED] {model_name} file path also failed: {e2}")
         
         if len(embs) == 2:
             return np.concatenate(embs)
+        if len(embs) == 1:
+            print(f"[EMBED] Only got 1 model embedding, returning single")
+            return embs[0]
     except Exception as e:
         print(f"[EMBED] Failed to generate concatenated embedding: {e}")
     finally:
         if tmp_path and os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
     return None
 
 

@@ -653,6 +653,14 @@ def delete_homework(hw_id):
 
 # ---------- Continuous Individual Scan API ----------
 
+@teacher_bp.route('/api/face_api_status')
+@login_required
+def face_api_status():
+    from ..face_client import check_api_health
+    ok = check_api_health()
+    return jsonify({'available': ok, 'url': os.environ.get('HF_FACE_API_URL', '')})
+
+
 @teacher_bp.route('/api/scan_single', methods=['POST'])
 @login_required
 def scan_single():

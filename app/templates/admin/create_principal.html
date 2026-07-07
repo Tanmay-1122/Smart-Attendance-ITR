@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <a href="/admin" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+    <div class="page-title" style="margin:0;">Manage Principal</div>
+  </div>
+
+  {% if existing_principal %}
+  <div class="alert alert-info mb-3">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>Existing Principal: <strong>{{ existing_principal.name }}</strong> ({{ existing_principal.email }}). Creating a new one will keep both accounts with the principal role.</span>
+  </div>
+  {% endif %}
+
+  <div class="page-sub mb-3">Only admins can create a Principal account. There is no self-registration for this role.</div>
+
+  <div class="card">
+    <div class="section-label" style="margin-bottom:8px;">Create Principal account</div>
+    <form method="POST" action="/admin/create-principal">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="field mb-2">
+        <label class="label">Full name</label>
+        <input type="text" name="name" class="input" placeholder="Prof. Name" required>
+      </div>
+      <div class="field mb-2">
+        <label class="label">Email</label>
+        <input type="email" name="email" class="input" placeholder="principal@university.edu" required>
+      </div>
+      <div class="field mb-3">
+        <label class="label">Password</label>
+        <input type="password" name="password" class="input" placeholder="Create a strong password" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Create Principal Account</button>
+    </form>
+  </div>
+
+  <a href="/admin" class="btn btn-ghost mt-3">Back to admin panel</a>
+
+</div>
+{% endblock %}

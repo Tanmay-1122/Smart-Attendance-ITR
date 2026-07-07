@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
-from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord
+from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord, Department
 from .. import db
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -64,11 +64,15 @@ def dashboard():
     total_teachers = User.query.filter_by(role='teacher').count()
     total_students = User.query.filter_by(role='student').count()
     total_admins = User.query.filter_by(is_admin=True).count()
+    total_hods = User.query.filter_by(role='hod').count()
+    total_principals = User.query.filter_by(role='principal').count()
     return render_template('admin/dashboard.html',
                            total_users=total_users,
                            total_teachers=total_teachers,
                            total_students=total_students,
-                           total_admins=total_admins)
+                           total_admins=total_admins,
+                           total_hods=total_hods,
+                           total_principals=total_principals)
 
 
 @admin_bp.route('/users')
@@ -82,6 +86,10 @@ def users():
         query = query.filter_by(role='teacher')
     elif role_filter == 'student':
         query = query.filter_by(role='student')
+    elif role_filter == 'hod':
+        query = query.filter_by(role='hod')
+    elif role_filter == 'principal':
+        query = query.filter_by(role='principal')
     elif role_filter == 'admin':
         query = query.filter_by(is_admin=True)
 
@@ -143,6 +151,158 @@ def toggle_admin(user_id):
     status = 'granted' if user.is_admin else 'revoked'
     flash(f'Admin privileges {status} for {user.name}.')
     return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/create-hod', methods=['GET', 'POST'])
+@admin_required
+def create_hod():
+    departments = Department.query.order_by(Department.name).all()
+    teachers = User.query.filter(User.role == 'teacher', User.department_id.is_(None)).order_by(User.name).all()
+
+    if request.method == 'POST':
+        action = request.form.get('action', 'new')
+        department_id = request.form.get('department_id')
+        if not department_id:
+            flash('Please select a department.')
+            return redirect(url_for('admin.create_hod'))
+
+        dept = db.session.get(Department, int(department_id))
+
+        # Check if department already has an HOD
+        existing_hod = User.query.filter_by(role='hod', department_id=dept.id).first()
+        if existing_hod:
+            flash(f'Department "{dept.name}" already has an HOD ({existing_hod.name}). Demote them first.')
+            return redirect(url_for('admin.create_hod'))
+
+        if action == 'existing':
+            user_id = request.form.get('user_id')
+            if not user_id:
+                flash('Please select a teacher.')
+                return redirect(url_for('admin.create_hod'))
+            user = db.get_or_404(User, int(user_id))
+            if user.role != 'teacher':
+                flash('Selected user is not a teacher.')
+                return redirect(url_for('admin.create_hod'))
+            user.role = 'hod'
+            user.department_id = dept.id
+            db.session.commit()
+            flash(f'{user.name} has been promoted to HOD of {dept.name}.')
+        else:
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            password = request.form.get('password', '').strip()
+            if not name or not email or not password:
+                flash('All fields are required for a new HOD account.')
+                return redirect(url_for('admin.create_hod'))
+            existing = User.query.filter_by(email=email).first()
+            if existing:
+                flash('Email already registered.')
+                return redirect(url_for('admin.create_hod'))
+            hod = User(
+                name=name,
+                email=email,
+                password=generate_password_hash(password),
+                role='hod',
+                department_id=dept.id
+            )
+            db.session.add(hod)
+            db.session.commit()
+            flash(f'HOD account created for {name} ({dept.name}).')
+
+        return redirect(url_for('admin.users'))
+
+    return render_template('admin/create_hod.html', departments=departments, teachers=teachers)
+
+
+@admin_bp.route('/create-principal', methods=['GET', 'POST'])
+@admin_required
+def create_principal():
+    existing_principal = User.query.filter_by(role='principal').first()
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        if not name or not email or not password:
+            flash('All fields are required.')
+            return redirect(url_for('admin.create_principal'))
+        existing = User.query.filter_by(email=email).first()
+        if existing:
+            flash('Email already registered.')
+            return redirect(url_for('admin.create_principal'))
+        principal = User(
+            name=name,
+            email=email,
+            password=generate_password_hash(password),
+            role='principal'
+        )
+        db.session.add(principal)
+        db.session.commit()
+        flash(f'Principal account created for {name}.')
+        return redirect(url_for('admin.users'))
+
+    return render_template('admin/create_principal.html', existing_principal=existing_principal)
+
+
+@admin_bp.route('/demote-hod/<int:user_id>', methods=['POST'])
+@admin_required
+def demote_hod(user_id):
+    user = db.get_or_404(User, user_id)
+    if user.id == current_user.id:
+        flash('You cannot change your own role.')
+        return redirect(url_for('admin.users'))
+    if user.role != 'hod':
+        flash(f'{user.name} is not an HOD.')
+        return redirect(url_for('admin.users'))
+
+    user.role = 'teacher'
+    db.session.commit()
+    flash(f'{user.name} has been demoted from HOD to teacher.')
+    return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/seed-default-accounts', methods=['POST'])
+@admin_required
+def seed_default_accounts():
+    from ..models import Department
+    from werkzeug.security import generate_password_hash
+    count = 0
+    depts_data = {'IT': 'Information Technology', 'CV': 'Civil Engineering',
+                  'E&TC': 'Electronics & Telecommunication', 'A&R': 'Automation & Robotics',
+                  'ME': 'Mechanical Engineering'}
+    for code, name in depts_data.items():
+        dept = Department.query.filter_by(code=code).first()
+        if not dept:
+            dept = Department(name=name, code=code)
+            db.session.add(dept)
+
+    if not User.query.filter_by(email='admin@college.edu').first():
+        db.session.add(User(name='System Admin', email='admin@college.edu',
+                            password=generate_password_hash('Admin@123'), role='student', is_admin=True))
+        count += 1
+
+    if not User.query.filter_by(role='principal').first():
+        db.session.add(User(name='Dr. Principal Sharma', email='principal@college.edu',
+                            password=generate_password_hash('Principal@123'), role='principal'))
+        count += 1
+
+    hods = [('Dr. Arvind Patil', 'hod.it@college.edu', 'IT'),
+            ('Dr. Sneha Deshmukh', 'hod.civil@college.edu', 'CV'),
+            ('Dr. Rajesh Kulkarni', 'hod.entc@college.edu', 'E&TC'),
+            ('Dr. Priya Joshi', 'hod.robotics@college.edu', 'A&R'),
+            ('Dr. Vikram Singh', 'hod.mech@college.edu', 'ME')]
+    for name, email, code in hods:
+        if not User.query.filter_by(email=email).first():
+            dept = Department.query.filter_by(code=code).first()
+            if dept:
+                db.session.add(User(name=name, email=email,
+                                    password=generate_password_hash('HOD@123'),
+                                    role='hod', department_id=dept.id))
+                count += 1
+
+    db.session.commit()
+    flash(f'Seeded {count} new accounts. Passwords: Admin@123, Principal@123, HOD@123')
+    return redirect(url_for('admin.dashboard'))
 
 
 @admin_bp.route('/delete/<int:user_id>', methods=['POST'])

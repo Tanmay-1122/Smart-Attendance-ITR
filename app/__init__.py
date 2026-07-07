@@ -33,6 +33,8 @@ def create_app():
     from .routes.announcements import announcements_bp
     from .routes.schedule   import schedule_bp
     from .routes.notifications import notifications_bp
+    from .routes.hod        import hod_bp
+    from .routes.principal  import principal_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
@@ -45,6 +47,8 @@ def create_app():
     app.register_blueprint(announcements_bp)
     app.register_blueprint(schedule_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(hod_bp)
+    app.register_blueprint(principal_bp)
 
     # Root redirect to login page
     from flask import redirect, url_for
@@ -54,7 +58,7 @@ def create_app():
         return redirect(url_for('auth.login'))
 
     with app.app_context():
-        from .models import ChatMessage
+        from .models import ChatMessage, Department
         db.create_all()
 
         # Migration: add missing columns (handles upgrades)
@@ -83,6 +87,20 @@ def create_app():
 
         _ensure_column('user', 'is_admin', 'BOOLEAN', 'FALSE')
         _ensure_column('user', 'email_notifications', 'BOOLEAN', 'TRUE')
+        _ensure_column('user', 'department_id', 'INTEGER')
         _ensure_column('student', 'parent_email', 'VARCHAR(100)')
+
+        # Seed departments if empty
+        if Department.query.count() == 0:
+            depts = [
+                Department(name='Information Technology', code='IT'),
+                Department(name='Civil Engineering', code='CV'),
+                Department(name='Electronics & Telecommunication', code='E&TC'),
+                Department(name='Automation & Robotics', code='A&R'),
+                Department(name='Mechanical Engineering', code='ME'),
+            ]
+            db.session.add_all(depts)
+            db.session.commit()
+            print("[INIT] Seeded departments")
 
     return app
