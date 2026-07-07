@@ -21,6 +21,18 @@ def login():
         password = request.form['password']
         user     = User.query.filter_by(email=email).first()
 
+        # Bootstrap: if default admin email used but no admin exists, auto-create
+        if not user and email == 'admin@college.edu' and not User.query.filter_by(is_admin=True).first():
+            from werkzeug.security import generate_password_hash
+            user = User(name='System Admin', email=email,
+                        password=generate_password_hash('Admin@123'),
+                        role='student', is_admin=True)
+            db.session.add(user)
+            db.session.commit()
+            flash('Admin account auto-created. Welcome!')
+            login_user(user)
+            return redirect(url_for('admin.dashboard'))
+
         if user and check_password_hash(user.password, password):
             # Auto-grant admin if email is in ADMIN_EMAILS config
             from flask import current_app

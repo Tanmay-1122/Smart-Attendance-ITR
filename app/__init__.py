@@ -103,31 +103,37 @@ def create_app():
             db.session.commit()
             print("[INIT] Seeded departments")
 
-        # Auto-seed default accounts on first deploy (no users exist yet)
+        # Ensure default accounts exist (safe to re-run — skips existing emails)
         from werkzeug.security import generate_password_hash
         from .models import User
-        if User.query.count() == 0:
-            users_data = [
-                ('System Admin', 'admin@college.edu', 'Admin@123', 'student', True, None),
-                ('Dr. Principal Sharma', 'principal@college.edu', 'Principal@123', 'principal', False, None),
-            ]
-            for name, email, pw, role, is_admin, dept_id in users_data:
+        defaults = [
+            ('System Admin', 'admin@college.edu', 'Admin@123', 'student', True, None),
+            ('Dr. Principal Sharma', 'principal@college.edu', 'Principal@123', 'principal', False, None),
+        ]
+        hods = [
+            ('Dr. Arvind Patil', 'hod.it@college.edu', 'IT'),
+            ('Dr. Sneha Deshmukh', 'hod.civil@college.edu', 'CV'),
+            ('Dr. Rajesh Kulkarni', 'hod.entc@college.edu', 'E&TC'),
+            ('Dr. Priya Joshi', 'hod.robotics@college.edu', 'A&R'),
+            ('Dr. Vikram Singh', 'hod.mech@college.edu', 'ME'),
+        ]
+        seeded = 0
+        for name, email, pw, role, is_admin, dept_id in defaults:
+            if not User.query.filter_by(email=email).first():
                 db.session.add(User(name=name, email=email,
                                     password=generate_password_hash(pw),
                                     role=role, is_admin=is_admin, department_id=dept_id))
-            hods = [
-                ('Dr. Arvind Patil', 'hod.it@college.edu', 'IT'),
-                ('Dr. Sneha Deshmukh', 'hod.civil@college.edu', 'CV'),
-                ('Dr. Rajesh Kulkarni', 'hod.entc@college.edu', 'E&TC'),
-                ('Dr. Priya Joshi', 'hod.robotics@college.edu', 'A&R'),
-                ('Dr. Vikram Singh', 'hod.mech@college.edu', 'ME'),
-            ]
-            for name, email, code in hods:
+                seeded += 1
+        for name, email, code in hods:
+            if not User.query.filter_by(email=email).first():
                 dept = Department.query.filter_by(code=code).first()
                 db.session.add(User(name=name, email=email,
                                     password=generate_password_hash('HOD@123'),
-                                    role='hod', is_admin=False, department_id=dept.id if dept else None))
+                                    role='hod', is_admin=False,
+                                    department_id=dept.id if dept else None))
+                seeded += 1
+        if seeded:
             db.session.commit()
-            print("[INIT] Auto-seeded default accounts (admin, principal, 5 HODs)")
+            print(f"[INIT] Seeded {seeded} missing default account(s)")
 
     return app
