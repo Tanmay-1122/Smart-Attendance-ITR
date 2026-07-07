@@ -5,7 +5,7 @@
   <div class="page-title">{{ dept.name }}</div>
   <div class="page-sub">Department of {{ dept.name }} &middot; {{ dept.code }}</div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px;">
     <div class="streak-card">
       <div class="streak-value">{{ total_teachers }}</div>
       <div class="streak-label">Teachers</div>
@@ -20,20 +20,18 @@
     </div>
   </div>
 
-  <!-- Today's Attendance -->
   <div class="section-label" style="margin-bottom:8px;">Today's Attendance &mdash; {{ today }}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-    <div style="padding:16px;border-radius:10px;background:rgba(34,197,94,.08);border:1.5px solid var(--success);text-align:center;">
+    <div style="padding:16px;border-radius:10px;background:rgba(16,185,129,.08);border:1.5px solid var(--success);text-align:center;">
       <div style="font-size:1.8rem;font-weight:800;color:var(--success);">{{ today_present }}</div>
-      <div style="font-size:.78rem;color:var(--text-2);font-weight:600;">Present</div>
+      <div style="font-size:.78rem;color:var(--text-secondary);font-weight:600;">Present</div>
     </div>
     <div style="padding:16px;border-radius:10px;background:rgba(239,68,68,.08);border:1.5px solid var(--danger);text-align:center;">
       <div style="font-size:1.8rem;font-weight:800;color:var(--danger);">{{ today_absent }}</div>
-      <div style="font-size:.78rem;color:var(--text-2);font-weight:600;">Absent</div>
+      <div style="font-size:.78rem;color:var(--text-secondary);font-weight:600;">Absent</div>
     </div>
   </div>
 
-  <!-- Attendance by Class -->
   {% if class_attendance %}
   <div class="section-label" style="margin-bottom:8px;">Attendance by Class</div>
   <div class="card" style="overflow:hidden;margin-bottom:16px;">
@@ -50,10 +48,10 @@
             <td>{{ ca.present }}</td>
             <td>
               <div style="display:flex;align-items:center;gap:8px;">
-                <div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+                <div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden;max-width:100px;">
                   <div style="height:100%;width:{{ ca.pct }}%;border-radius:3px;background:{% if ca.pct >= 75 %}var(--success){% elif ca.pct >= 50 %}var(--warning){% else %}var(--danger){% endif %};"></div>
                 </div>
-                <span style="font-weight:700;font-size:.82rem;{% if ca.pct >= 75 %}color:var(--success){% elif ca.pct >= 50 %}color:var(--warning){% else %}color:var(--danger){% endif %};">{{ ca.pct }}%</span>
+                <span style="font-weight:700;font-size:.82rem;white-space:nowrap;{% if ca.pct >= 75 %}color:var(--success){% elif ca.pct >= 50 %}color:var(--warning){% else %}color:var(--danger){% endif %};">{{ ca.pct }}%</span>
               </div>
             </td>
           </tr>
@@ -69,7 +67,6 @@
   </div>
   {% endif %}
 
-  <!-- Pending Leave Requests -->
   {% if pending_leaves %}
   <div class="section-label" style="margin-bottom:8px;">Pending Leave Requests</div>
   <div class="card" style="overflow:hidden;">
@@ -83,8 +80,8 @@
           <tr>
             <td style="font-weight:600;">{{ lv.student.user.name }}</td>
             <td>{{ lv.class_name }}</td>
-            <td style="font-size:.78rem;">{{ lv.start_date }} &rarr; {{ lv.end_date }}</td>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ lv.reason }}</td>
+            <td style="font-size:.78rem;white-space:nowrap;">{{ lv.start_date }} &rarr; {{ lv.end_date }}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);">{{ lv.reason }}</td>
           </tr>
           {% endfor %}
         </tbody>

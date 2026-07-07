@@ -3,7 +3,7 @@
 <div class="page">
 
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-    <a href="/admin" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+    <a href="/admin" style="color:var(--text-secondary);font-size:1.2rem;">&larr;</a>
     <div class="page-title" style="margin:0;">Manage Principal</div>
   </div>
 
@@ -14,26 +14,28 @@
   </div>
   {% endif %}
 
-  <div class="page-sub mb-3">Only admins can create a Principal account. There is no self-registration for this role.</div>
+  <div class="page-sub">Only admins can create a Principal account. There is no self-registration for this role.</div>
 
   <div class="card">
-    <div class="section-label" style="margin-bottom:8px;">Create Principal account</div>
-    <form method="POST" action="/admin/create-principal">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <div class="field mb-2">
-        <label class="label">Full name</label>
-        <input type="text" name="name" class="input" placeholder="Prof. Name" required>
-      </div>
-      <div class="field mb-2">
-        <label class="label">Email</label>
-        <input type="email" name="email" class="input" placeholder="principal@university.edu" required>
-      </div>
-      <div class="field mb-3">
-        <label class="label">Password</label>
-        <input type="password" name="password" class="input" placeholder="Create a strong password" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Create Principal Account</button>
-    </form>
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:10px;">Create Principal account</div>
+      <form method="POST" action="/admin/create-principal">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="field">
+          <label class="label">Full name</label>
+          <input type="text" name="name" class="input" placeholder="Prof. Name" required>
+        </div>
+        <div class="field">
+          <label class="label">Email</label>
+          <input type="email" name="email" class="input" placeholder="principal@university.edu" required>
+        </div>
+        <div class="field">
+          <label class="label">Password</label>
+          <input type="password" name="password" class="input" placeholder="Create a strong password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Principal Account</button>
+      </form>
+    </div>
   </div>
 
   <a href="/admin" class="btn btn-ghost mt-3">Back to admin panel</a>

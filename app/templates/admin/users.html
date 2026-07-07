@@ -3,15 +3,14 @@
 <div class="page">
 
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-    <a href="/admin" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+    <a href="/admin" style="color:var(--text-secondary);font-size:1.2rem;">&larr;</a>
     <div class="page-title" style="margin:0;">Manage Users</div>
   </div>
   <div class="page-sub">Promote students to teachers, manage HODs, Principal, admin access, or remove accounts</div>
 
-  <!-- Filters -->
   <div class="card mb-3" style="padding:14px 18px;">
     <form method="GET" action="/admin/users" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input type="text" name="search" class="input" placeholder="Search by name or email..." value="{{ search }}" style="flex:1;min-width:200px;">
+      <input type="text" name="search" class="input" placeholder="Search by name or email..." value="{{ search }}" style="flex:1;min-width:180px;">
       <select name="role" class="input" style="width:auto;">
         <option value="">All roles</option>
         <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Students</option>
@@ -20,84 +19,81 @@
         <option value="principal" {% if role_filter == 'principal' %}selected{% endif %}>Principals</option>
         <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admins</option>
       </select>
-      <button type="submit" class="btn btn-primary" style="font-size:.8rem;">Filter</button>
+      <button type="submit" class="btn btn-primary" style="font-size:.8rem;width:auto;padding:9px 16px;">Filter</button>
     </form>
   </div>
 
-  <!-- User List -->
   <div class="section-label" style="margin-bottom:8px;">Users ({{ users|length }})</div>
   {% if users %}
   <div class="card">
     {% for user in users %}
-    <div style="padding:14px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <div class="bar-avatar" style="width:36px;height:36px;font-size:.8rem;flex-shrink:0;">
-              {% if user.profile_photo %}
-              <img src="/static/uploads/{{ user.profile_photo }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-              {% else %}
-              {{ user.name[0]|upper }}
-              {% endif %}
-            </div>
-            <div>
-              <div style="font-weight:700;font-size:.9rem;color:var(--text);">{{ user.name }}</div>
-              <div style="font-size:.75rem;color:var(--text-3);">{{ user.email }}</div>
-            </div>
+    <div style="padding:12px 14px;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:160px;">
+          <div class="bar-avatar" style="width:34px;height:34px;font-size:.75rem;flex-shrink:0;">
+            {% if user.profile_photo %}
+            <img src="/static/uploads/{{ user.profile_photo }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            {% else %}
+            {{ user.name[0]|upper }}
+            {% endif %}
+          </div>
+          <div style="min-width:0;">
+            <div style="font-weight:600;font-size:.85rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ user.name }}</div>
+            <div style="font-size:.72rem;color:var(--text-tertiary);">{{ user.email }}</div>
           </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
           {% if user.is_admin %}
-          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(245,158,11,.12);color:#F59E0B;font-weight:700;">Admin</span>
+          <span style="font-size:.65rem;padding:2px 7px;border-radius:20px;background:rgba(245,158,11,.12);color:#F59E0B;font-weight:700;white-space:nowrap;">Admin</span>
           {% endif %}
           {% if user.role == 'hod' %}
-          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(139,92,246,.12);color:#8B5CF6;font-weight:600;">HOD{% if user.department %} &middot; {{ user.department.code }}{% endif %}</span>
+          <span style="font-size:.65rem;padding:2px 7px;border-radius:20px;background:rgba(139,92,246,.12);color:#8B5CF6;font-weight:600;white-space:nowrap;">HOD{% if user.department %} &middot; {{ user.department.code }}{% endif %}</span>
           {% elif user.role == 'principal' %}
-          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(245,158,11,.12);color:#F59E0B;font-weight:600;">Principal</span>
+          <span style="font-size:.65rem;padding:2px 7px;border-radius:20px;background:rgba(245,158,11,.12);color:#F59E0B;font-weight:600;white-space:nowrap;">Principal</span>
           {% elif user.role == 'teacher' %}
-          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(99,102,241,.1);color:var(--primary);font-weight:600;">Teacher</span>
+          <span style="font-size:.65rem;padding:2px 7px;border-radius:20px;background:rgba(99,102,241,.1);color:#6366F1;font-weight:600;white-space:nowrap;">Teacher</span>
           {% else %}
-          <span style="font-size:.68rem;padding:3px 8px;border-radius:20px;background:rgba(34,197,94,.1);color:var(--success);font-weight:600;">Student</span>
+          <span style="font-size:.65rem;padding:2px 7px;border-radius:20px;background:rgba(34,197,94,.1);color:#10B981;font-weight:600;white-space:nowrap;">Student</span>
           {% endif %}
 
           {% if user.id != current_user.id %}
           {% if user.role == 'student' %}
-          <form method="POST" action="/admin/promote/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Promote {{ user.name }} to teacher?');">
+          <form method="POST" action="/admin/promote/{{ user.id }}" style="margin:0;display:inline;" onsubmit="return confirm('Promote {{ user.name }} to teacher?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn btn-sm btn-primary" style="font-size:.68rem;padding:4px 10px;">Promote</button>
+            <button type="submit" class="btn btn-sm btn-primary" style="font-size:.65rem;padding:3px 8px;">Promote</button>
           </form>
           {% elif user.role == 'teacher' %}
-          <form method="POST" action="/admin/demote/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Demote {{ user.name }} to student? Their classes will be removed.');">
+          <form method="POST" action="/admin/demote/{{ user.id }}" style="margin:0;display:inline;" onsubmit="return confirm('Demote {{ user.name }} to student? Their classes will be removed.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--warning);border-color:var(--warning);">Demote</button>
+            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.65rem;padding:3px 8px;color:#F59E0B;border-color:#F59E0B;">Demote</button>
           </form>
           {% elif user.role == 'hod' %}
-          <form method="POST" action="/admin/demote-hod/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Demote {{ user.name }} from HOD to teacher?');">
+          <form method="POST" action="/admin/demote-hod/{{ user.id }}" style="margin:0;display:inline;" onsubmit="return confirm('Demote {{ user.name }} from HOD to teacher?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:#8B5CF6;border-color:#8B5CF6;">Demote</button>
+            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.65rem;padding:3px 8px;color:#8B5CF6;border-color:#8B5CF6;">Demote</button>
           </form>
           {% endif %}
 
           {% if not user.is_admin %}
-          <form method="POST" action="/admin/toggle-admin/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Grant admin privileges to {{ user.name }}?');">
+          <form method="POST" action="/admin/toggle-admin/{{ user.id }}" style="margin:0;display:inline;" onsubmit="return confirm('Grant admin privileges to {{ user.name }}?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:#F59E0B;border-color:#F59E0B;">Make Admin</button>
+            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.65rem;padding:3px 8px;color:#F59E0B;border-color:#F59E0B;">Make Admin</button>
           </form>
           {% else %}
           {% if user.id != current_user.id %}
-          <form method="POST" action="/admin/toggle-admin/{{ user.id }}" style="margin:0;" onsubmit="return confirm('Revoke admin privileges from {{ user.name }}?');">
+          <form method="POST" action="/admin/toggle-admin/{{ user.id }}" style="margin:0;display:inline;" onsubmit="return confirm('Revoke admin privileges from {{ user.name }}?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--text-3);border-color:var(--text-3);">Remove Admin</button>
+            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.65rem;padding:3px 8px;color:var(--text-tertiary);border-color:var(--border);">Remove Admin</button>
           </form>
           {% endif %}
           {% endif %}
 
-          <form method="POST" action="/admin/delete/{{ user.id }}" style="margin:0;" onsubmit="return confirm('DELETE {{ user.name }}? This cannot be undone.');">
+          <form method="POST" action="/admin/delete/{{ user.id }}" style="margin:0;display:inline;" onsubmit="return confirm('DELETE {{ user.name }}? This cannot be undone.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.68rem;padding:4px 10px;color:var(--danger);border-color:var(--danger);">Delete</button>
+            <button type="submit" class="btn btn-sm btn-ghost" style="font-size:.65rem;padding:3px 8px;color:#EF4444;border-color:#EF4444;">Delete</button>
           </form>
           {% else %}
-          <span style="font-size:.68rem;color:var(--text-3);font-style:italic;">You</span>
+          <span style="font-size:.65rem;color:var(--text-tertiary);font-style:italic;">You</span>
           {% endif %}
         </div>
       </div>
