@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Attendance Analytics</div>
+  {% if view == 'student' %}
+  <div class="page-sub">Your attendance trends and insights</div>
+  {% else %}
+  <div class="page-sub">{{ tc.name }} — class attendance overview</div>
+  {% endif %}
+
+  <!-- Summary Cards -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;" id="summary-cards">
+    <div class="streak-card">
+      <div class="streak-value" id="stat-pct">--</div>
+      <div class="streak-label">Attendance %</div>
+    </div>
+    <div class="streak-card">
+      <div class="streak-value" id="stat-total">--</div>
+      <div class="streak-label">Total Records</div>
+    </div>
+    <div class="streak-card streak-best">
+      <div class="streak-value" id="stat-risk">--</div>
+      <div class="streak-label" id="stat-risk-label">Present</div>
+    </div>
+  </div>
+
+  <!-- Attendance Trend -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">Attendance Trend (Last 60 Days)</div>
+      <div style="height:200px;position:relative;">
+        <canvas id="trend-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Distribution -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">Status Distribution</div>
+      <div style="display:flex;align-items:center;gap:24px;">
+        <div style="width:160px;height:160px;position:relative;">
+          <canvas id="status-chart"></canvas>
+        </div>
+        <div id="status-legend" style="flex:1;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly Pattern -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">Weekly Attendance Pattern</div>
+      <div style="height:180px;position:relative;">
+        <canvas id="weekly-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  {% if view == 'class' %}
+  <!-- At-Risk Students (teacher view only) -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">At-Risk Students (Below 75%)</div>
+      <div id="at-risk-list"></div>
+    </div>
+  </div>
+
+  <!-- Class Breakdown -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">Student Breakdown</div>
+      <div id="student-breakdown"></div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const view = '{{ view }}';
+  const studentId = {{ student.id if view == 'student' else 'null' }};
+  const classId = {{ tc.id if view == 'class' else 'null' }};
+  const apiUrl = view === 'student'
+    ? '/analytics/api/student/' + studentId + '/data'
+    : '/analytics/api/class/' + classId + '/data';
+
+  const COLORS = {
+    PRESENT: '#10B981',
+    REVIEW: '#F59E0B',
+    ABSENT: '#EF4444',
+    brand: '#6366F1',
+  };
+
+  fetch(apiUrl)
+    .then(r => r.json())
+    .then(data => {
+      if (view === 'student') renderStudent(data);
+      else renderClass(data);
+    });
+
+  function renderStudent(d) {
+    document.getElementById('stat-pct').textContent = d.percentage + '%';
+    document.getElementById('stat-total').textContent = d.total;
+    document.getElementById('stat-risk-label').textContent = 'Present';
+    document.getElementById('stat-risk').textContent = d.present;
+
+    // Trend chart
+    if (d.daily.length > 0) {
+      const labels = d.daily.map(p => p.date.slice(5));
+      const values = d.daily.map(p => p.status === 'PRESENT' ? 1 : p.status === 'REVIEW' ? 0.5 : 0);
+      new Chart(document.getElementById('trend-chart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: d.daily.map(p => p.status === 'PRESENT' ? COLORS.PRESENT : p.status === 'REVIEW' ? COLORS.REVIEW : COLORS.ABSENT),
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: true, ticks: { font: { size: 10 }, maxRotation: 45 } },
+            y: { display: false, min: 0, max: 1.2 }
+          }
+        }
+      });
+    }
+
+    // Status doughnut
+    renderStatusChart(d.status_counts);
+
+    // Weekly pattern
+    renderWeeklyChart(d.weekly_pct);
+
+    // Class stats
+    if (Object.keys(d.class_stats).length > 0) {
+      let html = '';
+      for (const [cn, s] of Object.entries(d.class_stats)) {
+        const pct = s.total > 0 ? Math.round(s.present / s.total * 100) : 0;
+        html += '<div class="class-row"><div class="class-row-header"><div class="class-name">' + cn + '</div>';
+        html += '<div class="class-pct" style="color:' + (pct >= 75 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)') + ';">' + pct + '%</div></div>';
+        html += '<div class="progress-track"><div class="progress-fill ' + (pct >= 75 ? 'good' : pct >= 50 ? 'mid' : 'bad') + '" style="width:' + pct + '%;"></div></div>';
+        html += '<div class="class-detail">' + s.present + ' of ' + s.total + ' classes attended</div></div>';
+      }
+      document.getElementById('student-breakdown').innerHTML = html || '<div class="empty"><p>No class data yet.</p></div>';
+    }
+  }
+
+  function renderClass(d) {
+    document.getElementById('stat-pct').textContent = d.overall_pct + '%';
+    document.getElementById('stat-total').textContent = d.total_records;
+    document.getElementById('stat-risk-label').textContent = 'At Risk';
+    document.getElementById('stat-risk').textContent = d.at_risk_count;
+
+    // Trend chart
+    if (d.daily.length > 0) {
+      new Chart(document.getElementById('trend-chart'), {
+        type: 'line',
+        data: {
+          labels: d.daily.map(p => p.date.slice(5)),
+          datasets: [{
+            data: d.daily.map(p => p.pct),
+            borderColor: COLORS.brand,
+            backgroundColor: 'rgba(99,102,241,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointBackgroundColor: COLORS.brand,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+            y: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+          }
+        }
+      });
+    }
+
+    // Status distribution (aggregate from students)
+    const sc = { PRESENT: 0, REVIEW: 0, ABSENT: 0 };
+    d.students.forEach(s => { sc.PRESENT += s.present; sc.REVIEW += s.review; sc.ABSENT += s.absent; });
+    renderStatusChart(sc);
+
+    // Weekly (not available for class, hide or show placeholder)
+    document.getElementById('weekly-chart').parentElement.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:20px;">Weekly pattern available in student view</div>';
+
+    // At-risk list
+    const atRisk = d.students.filter(s => s.at_risk);
+    if (atRisk.length > 0) {
+      let html = '';
+      atRisk.sort((a, b) => a.pct - b.pct);
+      atRisk.forEach(s => {
+        html += '<div class="record-item"><div><div class="record-class">' + s.name + '</div>';
+        html += '<div class="record-date">' + s.present + ' of ' + s.total + ' classes attended</div></div>';
+        html += '<span class="badge badge-absent">' + s.pct + '%</span></div>';
+      });
+      document.getElementById('at-risk-list').innerHTML = html;
+    } else {
+      document.getElementById('at-risk-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--success);font-size:0.88rem;font-weight:600;">No students at risk</div>';
+    }
+
+    // Student breakdown
+    let bhtml = '';
+    d.students.sort((a, b) => a.pct - b.pct).forEach(s => {
+      bhtml += '<div class="record-item"><div><div class="record-class">' + s.name + '</div>';
+      bhtml += '<div class="record-date">' + s.present + '/' + s.total + ' present</div></div>';
+      bhtml += '<span class="badge ' + (s.pct >= 75 ? 'badge-present' : s.pct >= 50 ? 'badge-review' : 'badge-absent') + '">' + s.pct + '%</span></div>';
+    });
+    document.getElementById('student-breakdown').innerHTML = bhtml || '<div class="empty"><p>No student data yet.</p></div>';
+  }
+
+  function renderStatusChart(counts) {
+    const total = counts.PRESENT + counts.REVIEW + counts.ABSENT;
+    if (total === 0) return;
+    new Chart(document.getElementById('status-chart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Present', 'Review', 'Absent'],
+        datasets: [{
+          data: [counts.PRESENT, counts.REVIEW, counts.ABSENT],
+          backgroundColor: [COLORS.PRESENT, COLORS.REVIEW, COLORS.ABSENT],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        cutout: '65%',
+        plugins: { legend: { display: false } }
+      }
+    });
+    const legend = document.getElementById('status-legend');
+    legend.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:3px;background:' + COLORS.PRESENT + ';"></div><span style="font-size:0.85rem;font-weight:600;">Present</span><span style="font-size:0.82rem;color:var(--text-tertiary);margin-left:auto;">' + counts.PRESENT + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:3px;background:' + COLORS.REVIEW + ';"></div><span style="font-size:0.85rem;font-weight:600;">Review</span><span style="font-size:0.82rem;color:var(--text-tertiary);margin-left:auto;">' + counts.REVIEW + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:3px;background:' + COLORS.ABSENT + ';"></div><span style="font-size:0.85rem;font-weight:600;">Absent</span><span style="font-size:0.82rem;color:var(--text-tertiary);margin-left:auto;">' + counts.ABSENT + '</span></div>' +
+      '</div>';
+  }
+
+  function renderWeeklyChart(pcts) {
+    new Chart(document.getElementById('weekly-chart'), {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        datasets: [{
+          data: pcts,
+          backgroundColor: pcts.map(p => p >= 75 ? COLORS.PRESENT : p >= 50 ? COLORS.REVIEW : COLORS.ABSENT),
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+        }
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

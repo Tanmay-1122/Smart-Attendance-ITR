@@ -2,7 +2,7 @@
 {% block content %}
 <div class="page">
 
-  <!-- Classes Section -->
+  <!-- Classes Section (shared) -->
   {% if classes %}
   <div class="section-header">
     <div class="section-label" style="margin-bottom:0;">Your classes</div>
@@ -29,144 +29,259 @@
   </div>
   {% endif %}
 
-  <!-- Steps indicator -->
-  <div id="step-indicator" style="margin-bottom:16px;">
-    <div class="section-header">
-      <div class="page-title" style="margin:0;" id="step-title">Capture Photo 1 of 3</div>
-      <div style="display:flex; gap:6px; align-items:center;">
-        <div class="step-dot" id="dot-1" style="width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(99,102,241,.2);"></div>
-        <div style="width:20px;height:2px;background:var(--border);border-radius:1px;" id="conn-1"></div>
-        <div class="step-dot" id="dot-2" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
-        <div style="width:20px;height:2px;background:var(--border);border-radius:1px;" id="conn-2"></div>
-        <div class="step-dot" id="dot-3" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
-      </div>
-    </div>
-    <div class="page-sub" style="margin-bottom:0;" id="step-sub">Make sure all students are clearly visible in the frame.</div>
+  <!-- Tab Switcher -->
+  <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:16px;">
+    <button class="tab-btn active" data-tab="batch" onclick="switchTab('batch')" style="flex:1;padding:10px 16px;background:var(--brand);border:none;cursor:pointer;font-weight:600;font-size:.82rem;color:#fff;transition:all .15s;border-right:1.5px solid var(--border);">
+      Batch Scan
+    </button>
+    <button class="tab-btn" data-tab="continuous" onclick="switchTab('continuous')" style="flex:1;padding:10px 16px;background:var(--surface);border:none;cursor:pointer;font-weight:600;font-size:.82rem;color:var(--text-2);transition:all .15s;">
+      Individual Scan
+    </button>
   </div>
 
-  <!-- Camera -->
-  <div id="camera-section">
-    <div class="cam-wrap mb-2">
-      <video id="video" autoplay playsinline></video>
-      <canvas id="canvas" style="display:none;"></canvas>
-      <div class="cam-border"></div>
-      <div id="guide-overlay" style="
-        position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
-        background:rgba(0,0,0,0.55); backdrop-filter:blur(8px);
-        color:#fff; font-size:.75rem; font-weight:600;
-        padding:6px 14px; border-radius:100px; letter-spacing:.03em; white-space:nowrap;
-        pointer-events:none;">
-        <span id="guide-text">Frame the class — include all students</span>
+  <!-- ===== BATCH MODE (existing) ===== -->
+  <div id="batch-mode">
+
+    <div id="step-indicator" style="margin-bottom:16px;">
+      <div class="section-header">
+        <div class="page-title" style="margin:0;" id="step-title">Capture Photo 1 of 3</div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <div class="step-dot" id="dot-1" style="width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(99,102,241,.2);"></div>
+          <div style="width:20px;height:2px;background:var(--border);border-radius:1px;" id="conn-1"></div>
+          <div class="step-dot" id="dot-2" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
+          <div style="width:20px;height:2px;background:var(--border);border-radius:1px;" id="conn-2"></div>
+          <div class="step-dot" id="dot-3" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
+        </div>
       </div>
+      <div class="page-sub" style="margin-bottom:0;" id="step-sub">Make sure all students are clearly visible in the frame.</div>
     </div>
 
-    <!-- Thumbnails -->
-    <div style="display:flex; gap:8px; margin-bottom:14px;">
-      <div id="thumb-1" class="thumb-slot"></div>
-      <div id="thumb-2" class="thumb-slot"></div>
-      <div id="thumb-3" class="thumb-slot"></div>
+    <div id="camera-section">
+      <div class="cam-wrap mb-2">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <div class="cam-border"></div>
+        <div id="guide-overlay" style="
+          position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+          background:rgba(0,0,0,0.55); backdrop-filter:blur(8px);
+          color:#fff; font-size:.75rem; font-weight:600;
+          padding:6px 14px; border-radius:100px; letter-spacing:.03em; white-space:nowrap;
+          pointer-events:none;">
+          <span id="guide-text">Frame the class — include all students</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <div id="thumb-1" class="thumb-slot"></div>
+        <div id="thumb-2" class="thumb-slot"></div>
+        <div id="thumb-3" class="thumb-slot"></div>
+      </div>
+
+      <button id="capture-btn" class="btn btn-primary">Capture photo 1</button>
+      <button id="retake-btn" class="btn btn-ghost" style="display:none; margin-top:8px;">Retake last photo</button>
     </div>
 
-    <button id="capture-btn" class="btn btn-primary">Capture photo 1</button>
-    <button id="retake-btn" class="btn btn-ghost" style="display:none; margin-top:8px;">Retake last photo</button>
+    <div id="submit-section" style="display:none;">
+      <div class="card mb-3" style="overflow:hidden;">
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
+          <img id="prev-1" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+          <img id="prev-2" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+          <img id="prev-3" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+        </div>
+      </div>
+      <div class="alert alert-success" style="margin-bottom:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:1px;"><polyline points="20 6 9 17 4 12"/></svg>
+        3 photos captured. Enter the class name and run the scan.
+      </div>
+
+      <form method="POST" action="/teacher/scan" id="scan-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="field mb-3">
+          <label class="label">Class name</label>
+          {% if classes %}
+          <select name="class_name" class="select" id="class-select" required>
+            <option value="" disabled {% if not preselected %}selected{% endif %}>Select a class</option>
+            {% for tc in classes %}
+            <option value="{{ tc.name }}" {% if preselected == tc.name %}selected{% endif %}>{{ tc.name }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="text" name="class_name" class="input" placeholder="No classes created yet" disabled>
+          {% endif %}
+        </div>
+        <input type="hidden" name="photo1_data" id="data-1">
+        <input type="hidden" name="photo2_data" id="data-2">
+        <input type="hidden" name="photo3_data" id="data-3">
+
+        <button type="submit" class="btn btn-primary" id="scan-btn">
+          <span id="scan-btn-text">Scan attendance</span>
+          <span id="scan-btn-loading" style="display:none;display:none;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="animation:spin .7s linear infinite;"><circle cx="12" cy="12" r="9" stroke-dasharray="30 56"/></svg>
+            Scanning faces...
+          </span>
+        </button>
+        <button type="button" class="btn btn-ghost" onclick="resetCapture()">Retake all photos</button>
+      </form>
+    </div>
+
   </div>
 
-  <!-- Submit section -->
-  <div id="submit-section" style="display:none;">
-    <div class="card mb-3" style="overflow:hidden;">
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
-        <img id="prev-1" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
-        <img id="prev-2" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
-        <img id="prev-3" src="" style="width:100%; aspect-ratio:4/3; object-fit:cover;">
+  <!-- ===== CONTINUOUS MODE (individual scan) ===== -->
+  <div id="continuous-mode" style="display:none;">
+
+    {% if classes %}
+    <div id="cont-status-area" style="text-align:center;padding:20px 0 16px;">
+      <div id="cont-status-badge" style="
+        display:inline-flex;align-items:center;gap:8px;
+        background:var(--surface);border:1.5px solid var(--border);border-radius:100px;
+        padding:8px 20px;font-size:.85rem;font-weight:600;color:var(--text-2);
+      ">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--text-3);" id="cont-led"></span>
+        <span id="cont-status-text">Select a class and press Start</span>
+      </div>
+
+      <div id="cont-match-flash" style="display:none;margin-top:12px;padding:16px;border-radius:12px;background:var(--success-bg);border:1.5px solid var(--success);">
+        <div style="font-size:1.2rem;font-weight:700;color:var(--success, #16a34a);" id="cont-match-name"></div>
+        <div style="font-size:.8rem;color:var(--text-2);margin-top:4px;">
+          <span id="cont-match-roll"></span> &middot; Confidence: <span id="cont-match-score"></span>
+        </div>
       </div>
     </div>
-    <div class="alert alert-success" style="margin-bottom:14px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:1px;"><polyline points="20 6 9 17 4 12"/></svg>
-      3 photos captured. Enter the class name and run the scan.
+
+    <div id="cont-camera-area">
+      <div class="cam-wrap mb-2" style="position:relative;">
+        <video id="cont-video" autoplay playsinline style="width:100%;border-radius:12px;display:block;background:#000;"></video>
+        <canvas id="cont-canvas" style="display:none;"></canvas>
+        <div class="cam-border"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
+        <button id="cont-start-btn" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Start Scanning
+        </button>
+        <button id="cont-stop-btn" class="btn btn-ghost" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;margin-right:6px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          Stop
+        </button>
+      </div>
     </div>
 
-    <form method="POST" action="/teacher/scan" id="scan-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <div class="field mb-3">
-        <label class="label">Class name</label>
-        {% if classes %}
-        <select name="class_name" class="select" id="class-select" required>
-          <option value="" disabled {% if not preselected %}selected{% endif %}>Select a class</option>
-          {% for tc in classes %}
-          <option value="{{ tc.name }}" {% if preselected == tc.name %}selected{% endif %}>{{ tc.name }}</option>
-          {% endfor %}
-        </select>
-        {% else %}
-        <input type="text" name="class_name" class="input" placeholder="No classes created yet" disabled>
-        {% endif %}
+    <div class="card" style="margin-top:16px;">
+      <div class="section-header">
+        <div class="section-label" style="margin:0;">Marked Present Today</div>
+        <span style="font-size:.78rem;font-weight:600;color:var(--text-3);" id="cont-count-badge">0 students</span>
       </div>
-      <input type="hidden" name="photo1_data" id="data-1">
-      <input type="hidden" name="photo2_data" id="data-2">
-      <input type="hidden" name="photo3_data" id="data-3">
+      <div id="cont-scanned-list">
+        <div class="empty" style="padding:20px;text-align:center;color:var(--text-3);font-size:.85rem;">
+          No students marked yet
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info mb-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Create a class first to use individual face scanning.</span>
+    </div>
+    {% endif %}
 
-      <button type="submit" class="btn btn-primary" id="scan-btn">
-        <span id="scan-btn-text">Scan attendance</span>
-        <span id="scan-btn-loading" style="display:none;display:none;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="animation:spin .7s linear infinite;"><circle cx="12" cy="12" r="9" stroke-dasharray="30 56"/></svg>
-          Scanning faces...
-        </span>
-      </button>
-      <button type="button" class="btn btn-ghost" onclick="resetCapture()">Retake all photos</button>
-    </form>
   </div>
 
 </div>
 
 <script>
+  const CSRF_TOKEN = '{{ csrf_token() }}';
+  const CLASSES_JSON = {{ classes_json|safe }};
+
+  // ===== TAB SWITCHING =====
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      if (b.dataset.tab === tab) {
+        b.style.background = 'var(--brand)';
+        b.style.color = '#fff';
+      } else {
+        b.style.background = 'var(--surface)';
+        b.style.color = 'var(--text-2)';
+      }
+    });
+    document.getElementById('batch-mode').style.display = tab === 'batch' ? 'block' : 'none';
+    document.getElementById('continuous-mode').style.display = tab === 'continuous' ? 'block' : 'none';
+
+    if (tab === 'batch') {
+      stopContinuousScan();
+      startBatchCamera();
+    } else {
+      stopBatchCamera();
+      loadTodayPresent();
+    }
+  }
+
+  // ===== BATCH SCAN (existing) =====
   const GUIDES = [
-    'Frame the class — include all students',
+    'Frame the class \u2014 include all students',
     'Move to a different angle from photo 1',
-    'Final shot — different position again'
+    'Final shot \u2014 different position again'
   ];
 
   let step = 1;
   const photos = {};
-  const video  = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
+  const batchVideo  = document.getElementById('video');
+  const batchCanvas = document.getElementById('canvas');
 
-  navigator.mediaDevices
-    .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
-    .then(stream => { video.srcObject = stream; })
-    .catch(() => {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
-        .catch(e => { document.getElementById('step-sub').textContent = 'Camera unavailable: ' + e.message; });
-    });
+  function startBatchCamera() {
+    if (batchVideo && !batchVideo.srcObject) {
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+        .then(stream => { batchVideo.srcObject = stream; })
+        .catch(() => {
+          navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { batchVideo.srcObject = stream; })
+            .catch(e => { const el = document.getElementById('step-sub'); if (el) el.textContent = 'Camera unavailable: ' + e.message; });
+        });
+    }
+  }
 
-  document.getElementById('capture-btn').addEventListener('click', capture);
+  function stopBatchCamera() {
+    if (batchVideo && batchVideo.srcObject) {
+      batchVideo.srcObject.getTracks().forEach(t => t.stop());
+      batchVideo.srcObject = null;
+    }
+  }
 
-  function capture() {
-    canvas.width  = video.videoWidth  || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    ctx.translate(canvas.width, 0);
+  startBatchCamera();
+
+  const captureBtn = document.getElementById('capture-btn');
+  if (captureBtn) captureBtn.addEventListener('click', function() {
+    batchCanvas.width  = batchVideo.videoWidth  || 1280;
+    batchCanvas.height = batchVideo.videoHeight || 720;
+    const ctx = batchCanvas.getContext('2d');
+    ctx.translate(batchCanvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+    ctx.drawImage(batchVideo, 0, 0, batchCanvas.width, batchCanvas.height);
+    const dataUrl = batchCanvas.toDataURL('image/jpeg', 0.75);
 
     photos[step] = dataUrl;
 
     const slot = document.getElementById('thumb-' + step);
-    slot.innerHTML = '<img src="' + dataUrl + '" alt="Photo ' + step + '">';
-    slot.classList.add('filled');
+    if (slot) {
+      slot.innerHTML = '<img src="' + dataUrl + '" alt="Photo ' + step + '">';
+      slot.classList.add('filled');
+    }
 
-    document.getElementById('prev-' + step).src = dataUrl;
-    document.getElementById('data-' + step).value = dataUrl;
+    const prev = document.getElementById('prev-' + step);
+    if (prev) prev.src = dataUrl;
+    const dataEl = document.getElementById('data-' + step);
+    if (dataEl) dataEl.value = dataUrl;
 
     if (step < 3) {
       step++;
-      updateUI();
+      updateBatchUI();
     } else {
-      showSubmit();
+      showBatchSubmit();
     }
-  }
+  });
 
-  function updateUI() {
+  function updateBatchUI() {
     document.getElementById('step-title').textContent = 'Capture Photo ' + step + ' of 3';
     document.getElementById('capture-btn').textContent = 'Capture photo ' + step;
     document.getElementById('guide-text').textContent  = GUIDES[step - 1];
@@ -192,21 +307,24 @@
     }
   }
 
-  document.getElementById('retake-btn').addEventListener('click', function () {
+  const retakeBtn = document.getElementById('retake-btn');
+  if (retakeBtn) retakeBtn.addEventListener('click', function () {
     step--;
     photos[step] = null;
     const slot = document.getElementById('thumb-' + step);
-    slot.innerHTML = '';
-    slot.classList.remove('filled');
+    if (slot) {
+      slot.innerHTML = '';
+      slot.classList.remove('filled');
+    }
     document.getElementById('data-' + step).value = '';
-    updateUI();
+    updateBatchUI();
   });
 
-  function showSubmit() {
+  function showBatchSubmit() {
     document.getElementById('camera-section').style.display   = 'none';
     document.getElementById('step-indicator').style.display   = 'none';
     document.getElementById('submit-section').style.display   = 'block';
-    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    if (batchVideo.srcObject) batchVideo.srcObject.getTracks().forEach(t => t.stop());
   }
 
   function resetCapture() {
@@ -215,20 +333,21 @@
       photos[i] = null;
       document.getElementById('data-' + i).value = '';
       const slot = document.getElementById('thumb-' + i);
-      slot.innerHTML = ''; slot.classList.remove('filled');
+      if (slot) { slot.innerHTML = ''; slot.classList.remove('filled'); }
     }
     document.getElementById('submit-section').style.display = 'none';
     document.getElementById('step-indicator').style.display = 'block';
     document.getElementById('camera-section').style.display = 'block';
-    updateUI();
+    updateBatchUI();
 
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-      .then(stream => { video.srcObject = stream; })
+      .then(stream => { batchVideo.srcObject = stream; })
       .catch(() => {});
   }
 
-  document.getElementById('scan-form').addEventListener('submit', function () {
+  const scanForm = document.getElementById('scan-form');
+  if (scanForm) scanForm.addEventListener('submit', function () {
     const btn = document.getElementById('scan-btn');
     const btnText = document.getElementById('scan-btn-text');
     const btnLoading = document.getElementById('scan-btn-loading');
@@ -238,6 +357,7 @@
     btnLoading.style.display = 'inline-flex';
   });
 
+  // ===== CLASS SELECTION (shared) =====
   function selectClass(el) {
     document.querySelectorAll('.class-chip').forEach(c => {
       c.style.borderColor = 'var(--border)';
@@ -248,9 +368,211 @@
     el.style.background = 'var(--brand-light)';
     el.style.boxShadow = '0 2px 8px rgba(99,102,241,.15)';
     const sel = document.getElementById('class-select');
-    if (sel) {
-      sel.value = el.dataset.name;
-    }
+    if (sel) sel.value = el.dataset.name;
+    selectedClassName = el.dataset.name;
   }
+
+  // ===== CONTINUOUS SCAN =====
+  let selectedClassName = '{{ preselected }}';
+  let contScanning = false;
+  let contTimer = null;
+  let contCooldown = false;
+  let contBusy = false;
+  let markedToday = new Set();
+
+  const contVideo  = document.getElementById('cont-video');
+  const contCanvas = document.getElementById('cont-canvas');
+
+  function setContStatus(text, ledColor) {
+    const badge = document.getElementById('cont-status-text');
+    const led = document.getElementById('cont-led');
+    if (badge) badge.textContent = text;
+    if (led) led.style.background = ledColor;
+  }
+
+  function showMatch(name, roll, score) {
+    const flash = document.getElementById('cont-match-flash');
+    const nameEl = document.getElementById('cont-match-name');
+    const rollEl = document.getElementById('cont-match-roll');
+    const scoreEl = document.getElementById('cont-match-score');
+    if (flash) flash.style.display = 'block';
+    if (nameEl) nameEl.textContent = name;
+    if (rollEl) rollEl.textContent = roll || '-';
+    if (scoreEl) scoreEl.textContent = score.toFixed(4);
+    setTimeout(() => { if (flash) flash.style.display = 'none'; }, 4000);
+  }
+
+  function startContinuousScan() {
+    if (!selectedClassName) {
+      setContStatus('Select a class first', 'var(--warning, #f59e0b)');
+      return;
+    }
+    contScanning = true;
+
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } } })
+      .then(stream => {
+        contVideo.srcObject = stream;
+        setContStatus('Camera ready \u2014 waiting for face...', 'var(--text-3)');
+        contTimer = setInterval(captureAndIdentify, 1800);
+      })
+      .catch(() => {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            contVideo.srcObject = stream;
+            setContStatus('Camera ready \u2014 waiting for face...', 'var(--text-3)');
+            contTimer = setInterval(captureAndIdentify, 1800);
+          })
+          .catch(e => {
+            setContStatus('Camera unavailable: ' + e.message, '#ef4444');
+            contScanning = false;
+          });
+      });
+
+    document.getElementById('cont-start-btn').style.display = 'none';
+    document.getElementById('cont-stop-btn').style.display  = 'inline-flex';
+    setContStatus('Starting camera...', '#f59e0b');
+  }
+
+  function stopContinuousScan() {
+    contScanning = false;
+    if (contTimer) { clearInterval(contTimer); contTimer = null; }
+    if (contVideo && contVideo.srcObject) {
+      contVideo.srcObject.getTracks().forEach(t => t.stop());
+      contVideo.srcObject = null;
+    }
+    contCooldown = false;
+    contBusy = false;
+    document.getElementById('cont-start-btn').style.display = 'inline-flex';
+    document.getElementById('cont-stop-btn').style.display  = 'none';
+    setContStatus('Scanning stopped', 'var(--text-3)');
+  }
+
+  function captureAndIdentify() {
+    if (contCooldown || contBusy || !contScanning) return;
+    if (!contVideo || !contVideo.videoWidth) return;
+
+    contBusy = true;
+    contCanvas.width  = contVideo.videoWidth || 640;
+    contCanvas.height = contVideo.videoHeight || 480;
+    const ctx = contCanvas.getContext('2d');
+    ctx.drawImage(contVideo, 0, 0, contCanvas.width, contCanvas.height);
+    const dataUrl = contCanvas.toDataURL('image/jpeg', 0.7);
+
+    setContStatus('Scanning face...', '#f59e0b');
+
+    const formData = new URLSearchParams();
+    formData.set('photo_data', dataUrl);
+    formData.set('class_name', selectedClassName);
+
+    fetch('/teacher/api/scan_single', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: formData.toString(),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.matched && data.status === 'PRESENT' && data.student_id) {
+        if (!markedToday.has(data.student_id)) {
+          return markStudentPresent(data);
+        }
+      }
+      contBusy = false;
+      setContStatus('Waiting for face...', 'var(--text-3)');
+    })
+    .catch(err => {
+      console.error('[CONT-SCAN]', err);
+      contBusy = false;
+      setContStatus('Error scanning, retrying...', '#ef4444');
+    });
+  }
+
+  function markStudentPresent(data) {
+    contCooldown = true;
+    setContStatus('Marking present...', '#16a34a');
+
+    const formData = new URLSearchParams();
+    formData.set('student_id', data.student_id);
+    formData.set('class_name', selectedClassName);
+    formData.set('score', data.score);
+
+    return fetch('/teacher/api/mark_present', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: formData.toString(),
+    })
+    .then(r => r.json())
+    .then(result => {
+      if (result.success) {
+        if (!result.already_present) {
+          markedToday.add(data.student_id);
+          showMatch(result.name, data.roll_number || '', data.score);
+        }
+        return loadTodayPresent();
+      }
+    })
+    .catch(err => console.error('[CONT-MARK]', err))
+    .then(() => {
+      contBusy = false;
+      setTimeout(() => {
+        contCooldown = false;
+        if (contScanning) setContStatus('Waiting for face...', 'var(--text-3)');
+      }, 2500);
+    });
+  }
+
+  function loadTodayPresent() {
+    if (!selectedClassName) return;
+    fetch('/teacher/api/today_present?class_name=' + encodeURIComponent(selectedClassName))
+      .then(r => r.json())
+      .then(data => {
+        const list = document.getElementById('cont-scanned-list');
+        const badge = document.getElementById('cont-count-badge');
+        const students = data.students || [];
+
+        students.forEach(s => markedToday.add(s.student_id));
+
+        if (badge) badge.textContent = students.length + ' student' + (students.length !== 1 ? 's' : '');
+
+        if (students.length === 0) {
+          if (list) list.innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--text-3);font-size:.85rem;">No students marked yet</div>';
+          return;
+        }
+
+        let html = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Roll</th><th>Score</th><th>Status</th></tr></thead><tbody>';
+        students.forEach(s => {
+          const statusClass = s.status === 'PRESENT' ? 'badge-present' : (s.status === 'REVIEW' ? 'badge-review' : 'badge-absent');
+          html += '<tr>' +
+            '<td style="font-weight:600;">' + escapeHtml(s.name) + '</td>' +
+            '<td style="color:var(--text-2);">' + escapeHtml(s.roll_number) + '</td>' +
+            '<td>' + (s.score ? s.score.toFixed(4) : '-') + '</td>' +
+            '<td><span class="badge ' + statusClass + '">' + s.status + '</span></td>' +
+            '</tr>';
+        });
+        html += '</tbody></table></div>';
+        if (list) list.innerHTML = html;
+      })
+      .catch(err => console.error('[CONT-LOAD]', err));
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Event listeners for continuous controls
+  const contStartBtn = document.getElementById('cont-start-btn');
+  const contStopBtn  = document.getElementById('cont-stop-btn');
+  if (contStartBtn) contStartBtn.addEventListener('click', startContinuousScan);
+  if (contStopBtn)  contStopBtn.addEventListener('click', stopContinuousScan);
+
+  // Load today's present list when continuous mode is first shown
+  if (selectedClassName) loadTodayPresent();
 </script>
 {% endblock %}

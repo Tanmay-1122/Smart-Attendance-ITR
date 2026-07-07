@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Leave History</div>
+  <div class="page-sub">Your past and pending leave requests</div>
+
+  {% if leave_requests %}
+  <div class="card">
+    {% for lr in leave_requests %}
+    <div style="padding:14px 16px;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:.92rem;">{{ lr.class_name }}</div>
+          <div style="font-size:.78rem;color:var(--text-tertiary);margin-top:2px;">
+            {{ lr.start_date.strftime('%d %b') }} – {{ lr.end_date.strftime('%d %b %Y') }}
+          </div>
+        </div>
+        <span class="badge
+          {%- if lr.status == 'APPROVED' %} badge-present
+          {%- elif lr.status == 'REJECTED' %} badge-absent
+          {%- else %} badge-review{%- endif %}">
+          {{ lr.status }}
+        </span>
+      </div>
+      <div style="font-size:.82rem;color:var(--text-secondary);margin-top:6px;">{{ lr.reason }}</div>
+      {% if lr.teacher_note %}
+      <div style="font-size:.78rem;color:var(--text-tertiary);margin-top:4px;font-style:italic;">Teacher: {{ lr.teacher_note }}</div>
+      {% endif %}
+      <div style="font-size:.68rem;color:var(--text-tertiary);margin-top:4px;">Requested {{ lr.created_at.strftime('%d %b %Y') }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <p>No leave requests yet.</p>
+  </div>
+  {% endif %}
+
+  <a href="/leave/request" class="btn btn-primary mt-3">New Leave Request</a>
+
+</div>
+{% endblock %}

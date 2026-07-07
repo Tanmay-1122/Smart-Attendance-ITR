@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Manage Schedule</div>
+  <div class="page-sub">Set up recurring class time slots</div>
+
+  <!-- Add Schedule Form -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="POST" action="/schedule/add">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="field">
+          <label class="label">Class</label>
+          {% if classes %}
+          <select name="class_id" class="select" required>
+            <option value="" disabled selected>Select a class</option>
+            {% for tc in classes %}
+            <option value="{{ tc.id }}">{{ tc.name }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="text" class="input" value="No classes created yet" disabled>
+          {% endif %}
+        </div>
+
+        <div class="field">
+          <label class="label">Day of week</label>
+          <select name="day_of_week" class="select" required>
+            <option value="" disabled selected>Select a day</option>
+            {% for i in range(7) %}
+            <option value="{{ i }}">{{ days[i] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="field">
+            <label class="label">Start time</label>
+            <input type="time" name="start_time" class="input" required>
+          </div>
+          <div class="field">
+            <label class="label">End time</label>
+            <input type="time" name="end_time" class="input" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Room (optional)</label>
+          <input type="text" name="room" class="input" placeholder="e.g. Room 101">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Time Slot</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Existing Schedules -->
+  {% for tc in classes %}
+  {% if by_class[tc.id] %}
+  <div class="section-label" style="margin-bottom:8px;">{{ tc.name }}</div>
+  <div class="card mb-3">
+    {% for s in by_class[tc.id] %}
+    <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
+      <div>
+        <div style="font-weight:600;font-size:.88rem;">{{ days[s.day_of_week] }}</div>
+        <div style="font-size:.78rem;color:var(--text-tertiary);">
+          {{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}
+          {% if s.room %} · {{ s.room }}{% endif %}
+        </div>
+      </div>
+      <form method="POST" action="/schedule/delete/{{ s.id }}" onsubmit="return confirm('Remove this time slot?');" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  <a href="/schedule/" class="btn btn-ghost">View Timetable</a>
+
+</div>
+{% endblock %}

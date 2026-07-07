@@ -43,3 +43,16 @@ def scan_faces(image_paths: list[str], student_embeddings: dict) -> dict:
     if not resp.ok:
         raise RuntimeError(f"Face API error ({resp.status_code}): {resp.text}")
     return resp.json()
+
+
+def identify_face(image_path: str, student_embeddings: dict) -> dict:
+    if not HF_API_URL:
+        raise RuntimeError("HF_FACE_API_URL not configured")
+    photo = _encode_image(image_path)
+    resp = requests.post(f"{HF_API_URL}/api/identify", json={
+        'photo': photo,
+        'student_embeddings': student_embeddings,
+    }, timeout=120)
+    if not resp.ok:
+        raise RuntimeError(f"Face API error ({resp.status_code}): {resp.text}")
+    return resp.json()

@@ -41,3 +41,18 @@ class Config:
 
     # Admin emails — comma-separated list of emails that get admin on first login
     ADMIN_EMAILS = [e.strip() for e in os.environ.get('ADMIN_EMAILS', '').split(',') if e.strip()]
+
+    # SMTP / Email
+    SMTP_HOST = os.environ.get('SMTP_HOST', '')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+    SMTP_USER = os.environ.get('SMTP_USER', '')
+    SMTP_PASS = os.environ.get('SMTP_PASS', '')
+    SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER)
+
+    # Password reset
+    RESET_TOKEN_EXPIRY = 3600  # seconds
+
+    # VAPID (Web Push)
+    VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+    VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+    VAPID_EMAIL = os.environ.get('VAPID_EMAIL', '')

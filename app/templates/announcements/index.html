@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div>
+      <div class="page-title" style="margin-bottom:0;">Announcements</div>
+      <div class="page-sub" style="margin-bottom:0;">Important updates and notices</div>
+    </div>
+    {% if current_user.role != 'student' %}
+    <a href="/announcements/create" class="btn btn-primary btn-sm" style="margin:0;">New</a>
+    {% endif %}
+  </div>
+
+  {% if announcements %}
+  <div class="stack">
+    {% for ann in announcements %}
+    <div class="card" style="{% if ann.pinned %}border-color:var(--brand);box-shadow:0 0 0 1px var(--brand-glow);{% endif %}">
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              {% if ann.pinned %}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--brand)" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>
+              {% endif %}
+              <span class="badge
+                {%- if ann.priority == 'URGENT' %} badge-absent
+                {%- elif ann.priority == 'HIGH' %} badge-review
+                {%- else %} badge-present{%- endif %}" style="font-size:.62rem;">
+                {{ ann.priority }}
+              </span>
+              {% if ann.target == 'CLASS' %}
+              <span class="badge" style="font-size:.62rem;background:var(--brand-light);color:var(--brand);">{{ ann.target_class }}</span>
+              {% endif %}
+            </div>
+            <div style="font-weight:700;font-size:.95rem;color:var(--text);">{{ ann.title }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            {% if current_user.is_admin %}
+            <form method="POST" action="/announcements/pin/{{ ann.id }}" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="{{ 'Unpin' if ann.pinned else 'Pin' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ 'var(--brand)' if ann.pinned else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>
+              </button>
+            </form>
+            {% endif %}
+            {% if ann.author_id == current_user.id or current_user.is_admin %}
+            <form method="POST" action="/announcements/delete/{{ ann.id }}" onsubmit="return confirm('Delete this announcement?');" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        <div style="font-size:.88rem;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;">{{ ann.body }}</div>
+        <div style="font-size:.68rem;color:var(--text-tertiary);margin-top:10px;">
+          {{ ann.author.name if ann.author else 'Unknown' }} &middot; {{ ann.created_at.strftime('%d %b %Y, %I:%M %p') }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <p>No announcements yet.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Timetable</div>
+  {% if class_name %}
+  <div class="page-sub">{{ class_name }} — weekly schedule</div>
+  {% else %}
+  <div class="page-sub">Your weekly class schedule</div>
+  {% endif %}
+
+  <!-- Today's Classes Widget -->
+  <div id="today-widget" class="card mb-3" style="display:none;">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:10px;">Today's Classes</div>
+      <div id="today-list"></div>
+    </div>
+  </div>
+
+  <!-- Weekly Grid -->
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;min-width:600px;">
+        <thead>
+          <tr>
+            <th style="padding:12px 8px;text-align:left;font-size:.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);width:80px;">Time</th>
+            {% for d in day_abbr %}
+            <th style="padding:12px 8px;text-align:center;font-size:.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);">{{ d }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for hour in range(8, 20) %}
+          <tr>
+            <td style="padding:8px;font-size:.78rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-light);">{{ '%02d:00'|format(hour) }}</td>
+            {% for day_idx in range(7) %}
+            <td style="padding:4px;border-bottom:1px solid var(--border-light);vertical-align:top;">
+              {% for s in by_day[day_idx] %}
+              {% if s.start_time.hour == hour %}
+              <div style="background:linear-gradient(135deg,var(--brand),#7C3AED);color:#fff;border-radius:8px;padding:8px;margin-bottom:4px;font-size:.75rem;box-shadow:0 2px 6px rgba(99,102,241,0.2);">
+                <div style="font-weight:700;">{{ s.tc.name if s.tc else 'Class' }}</div>
+                <div style="opacity:.8;font-size:.68rem;margin-top:2px;">{{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}</div>
+                {% if s.room %}
+                <div style="opacity:.7;font-size:.65rem;margin-top:1px;">{{ s.room }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if current_user.role == 'teacher' %}
+  <a href="/schedule/manage" class="btn btn-primary mt-3">Manage Schedule</a>
+  {% endif %}
+
+</div>
+
+<script>
+fetch('/schedule/api/today')
+  .then(r => r.json())
+  .then(classes => {
+    if (classes.length > 0) {
+      document.getElementById('today-widget').style.display = 'block';
+      let html = '';
+      classes.forEach(c => {
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light);">';
+        html += '<div style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>';
+        html += '<div style="flex:1;"><div style="font-weight:600;font-size:.88rem;">' + c.class_name + '</div>';
+        html += '<div style="font-size:.75rem;color:var(--text-tertiary);">' + c.start_time + ' – ' + c.end_time + (c.room ? ' · ' + c.room : '') + '</div></div>';
+        html += '</div>';
+      });
+      document.getElementById('today-list').innerHTML = html;
+    }
+  });
+</script>
+{% endblock %}

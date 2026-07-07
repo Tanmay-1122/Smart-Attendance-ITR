@@ -89,10 +89,54 @@
       </div>
     </div>
 
+    <!-- Parent Email (students only) -->
+    {% if current_user.role == 'student' %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="field" style="margin-bottom:0;">
+          <label class="label">Parent email (optional)</label>
+          <input type="email" name="parent_email" class="input"
+                 value="{{ current_user.student.parent_email if current_user.student and current_user.student.parent_email else '' }}"
+                 placeholder="parent@example.com">
+          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Parents receive attendance summaries and homework alerts.</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Email Notifications -->
+    <div class="card mb-3">
+      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="label" style="margin-bottom:2px;">Email notifications</div>
+          <div style="font-size:0.78rem;color:var(--text-tertiary);">Receive attendance summaries and homework alerts via email</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;">
+          <input type="checkbox" name="email_notifications" value="on"
+                 {% if current_user.email_notifications %}checked{% endif %}
+                 style="opacity:0;width:0;height:0;" onchange="this.closest('form').submit()">
+          <span style="position:absolute;cursor:pointer;inset:0;background:{% if current_user.email_notifications %}var(--brand){% else %}var(--border){% endif %};border-radius:13px;transition:.3s;"></span>
+          <span style="position:absolute;content:'';height:20px;width:20px;left:{% if current_user.email_notifications %}24px{% else %}3px{% endif %};bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+        </label>
+      </div>
+    </div>
+
     <button type="submit" class="btn btn-primary">Save changes</button>
     <a href="javascript:history.back()" class="btn btn-ghost" style="margin-top:10px;">Cancel</a>
 
   </form>
+
+  {% if vapid_public_key %}
+  <div class="card mt-3">
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div class="label" style="margin-bottom:2px;">Push Notifications</div>
+        <div style="font-size:0.78rem;color:var(--text-tertiary);">Manage browser push notification settings</div>
+      </div>
+      <a href="/notifications/settings" class="btn btn-ghost btn-sm" style="margin:0;">Configure</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <script>

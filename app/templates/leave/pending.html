@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="page-title">Pending Leave Requests</div>
+  <div class="page-sub">Review and decide on student leave requests</div>
+
+  {% if leave_requests %}
+  <div class="stack">
+    {% for lr in leave_requests %}
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:700;font-size:.95rem;">
+              {{ lr.student.user.name if lr.student and lr.student.user else 'Unknown' }}
+            </div>
+            <div style="font-size:.78rem;color:var(--text-tertiary);margin-top:2px;">
+              {{ lr.class_name }} &middot; Roll {{ lr.student.roll_number if lr.student else '' }}
+            </div>
+          </div>
+          <span class="badge badge-review">PENDING</span>
+        </div>
+
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:.85rem;color:var(--text);">
+            <strong>Dates:</strong> {{ lr.start_date.strftime('%d %b') }} – {{ lr.end_date.strftime('%d %b %Y') }}
+          </div>
+          <div style="font-size:.85rem;color:var(--text);margin-top:6px;">
+            <strong>Reason:</strong> {{ lr.reason }}
+          </div>
+        </div>
+
+        <form method="POST" style="margin-bottom:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <div class="field">
+            <label class="label" style="font-size:.78rem;">Note (optional)</label>
+            <input type="text" name="note" class="input" placeholder="Add a note for the student" style="font-size:.85rem;">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" formaction="/leave/approve/{{ lr.id }}" class="btn btn-success" style="flex:1;">Approve</button>
+            <button type="submit" formaction="/leave/reject/{{ lr.id }}" class="btn btn-danger" style="flex:1;">Reject</button>
+          </div>
+        </form>
+
+        <div style="font-size:.68rem;color:var(--text-tertiary);margin-top:8px;">
+          Requested {{ lr.created_at.strftime('%d %b %Y, %I:%M %p') }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+    <p>No pending leave requests.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

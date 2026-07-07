@@ -7,6 +7,7 @@ from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentC
 from .. import db
 from ..telegram.bot import send_homework, get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
+from ..email import send_attendance_summary_email, send_homework_alert_email
 from werkzeug.utils import secure_filename
 import pandas as pd
 
@@ -17,7 +18,9 @@ teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 def dashboard():
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.created_at.desc()).all()
     preselected = request.args.get('class', '')
-    return render_template('teacher/dashboard.html', classes=classes, preselected=preselected)
+    import json
+    classes_json = json.dumps([{'id': c.id, 'name': c.name} for c in classes])
+    return render_template('teacher/dashboard.html', classes=classes, preselected=preselected, classes_json=classes_json)
 
 @teacher_bp.route('/classes')
 @login_required
@@ -285,6 +288,51 @@ def save_attendance():
 
     db.session.commit()
     flash('Attendance saved successfully!')
+
+    # Send attendance summary emails to students and parents
+    try:
+        for student_id in student_ids:
+            student = db.session.get(Student, student_id)
+            if not student or not student.user:
+                continue
+            if not student.user.email_notifications:
+                continue
+
+            # Build records for this student today
+            today_records = AttendanceRecord.query.filter_by(
+                student_id=student_id, date=datetime.date.today()
+            ).all()
+            email_records = [{
+                'class_name': r.class_name,
+                'date': r.date.strftime('%d %b %Y') if r.date else '',
+                'status': r.status,
+            } for r in today_records]
+
+            # Calculate overall percentage
+            all_records = AttendanceRecord.query.filter_by(student_id=student_id).all()
+            att_map = {}
+            for r in all_records:
+                if r.date:
+                    att_map[r.date.isoformat()] = r.status
+            total_present = sum(1 for v in att_map.values() if v == 'PRESENT')
+            total_days = len(att_map)
+            percentage = round(total_present / total_days * 100) if total_days else 0
+
+            # Send to student
+            send_attendance_summary_email(
+                student.user.email, student.user.name,
+                email_records, percentage
+            )
+
+            # Send to parent if configured
+            if student.parent_email:
+                send_attendance_summary_email(
+                    student.parent_email, student.user.name,
+                    email_records, percentage
+                )
+    except Exception as e:
+        print(f"[EMAIL] Attendance summary error: {e}")
+
     return redirect(url_for('teacher.dashboard'))
 
 @teacher_bp.route('/export')
@@ -538,6 +586,35 @@ def homework():
 
         if success:
             flash('Homework posted!')
+
+            # Send homework alert emails to enrolled students
+            try:
+                tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+                if tc:
+                    enrollments = StudentClass.query.filter_by(class_id=tc.id).all()
+                    for sc in enrollments:
+                        student = sc.student
+                        if student and student.user and student.user.email_notifications:
+                            send_homework_alert_email(
+                                student.user.email, student.user.name,
+                                title, class_name, current_user.name,
+                                due_date=due_date
+                            )
+                            if student.parent_email:
+                                send_homework_alert_email(
+                                    student.parent_email, student.user.name,
+                                    title, class_name, current_user.name,
+                                    due_date=due_date
+                                )
+            except Exception as e:
+                print(f"[EMAIL] Homework alert error: {e}")
+
+            # Send push notifications
+            try:
+                from ..routes.notifications import notify_homework
+                notify_homework(hw)
+            except Exception as e:
+                print(f"[PUSH] Homework push error: {e}")
         else:
             flash('Failed to post homework to Telegram.')
 
@@ -571,4 +648,200 @@ def delete_homework(hw_id):
     db.session.delete(hw)
     db.session.commit()
     flash('Homework deleted.')
-    return redirect(url_for('teacher.homework'))
+    return redirect(url_for('teacher.homework'))
+
+
+# ---------- Continuous Individual Scan API ----------
+
+@teacher_bp.route('/api/scan_single', methods=['POST'])
+@login_required
+def scan_single():
+    class_name = request.form.get('class_name', '').strip()
+    photo_data = request.form.get('photo_data', '')
+
+    if not class_name or not photo_data:
+        return jsonify({'error': 'Missing class_name or photo_data'}), 400
+
+    tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+    if not tc:
+        return jsonify({'error': 'Invalid class'}), 400
+
+    upload_dir = os.path.join('app', 'static', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+
+    if ',' in photo_data:
+        photo_data = photo_data.split(',', 1)[1]
+
+    try:
+        img_bytes = b64lib.b64decode(photo_data)
+        path = os.path.join(upload_dir, f'single_scan_{current_user.id}.jpg')
+        with open(path, 'wb') as fh:
+            fh.write(img_bytes)
+    except Exception:
+        return jsonify({'error': 'Failed to decode photo'}), 400
+
+    try:
+        import json
+        from ..face_client import identify_face
+
+        student_embeddings = {}
+        enrolled_students = StudentClass.query.filter_by(class_id=tc.id).all()
+        for sc in enrolled_students:
+            student = sc.student
+            if student and student.face_embedding:
+                try:
+                    emb_data = json.loads(student.face_embedding)
+                    if emb_data and isinstance(emb_data[0], list):
+                        student_embeddings[student.id] = emb_data
+                    else:
+                        student_embeddings[student.id] = [emb_data]
+                except Exception:
+                    pass
+
+        if not student_embeddings:
+            return jsonify({'matched': False, 'reason': 'No enrolled students with face data'})
+
+        result = identify_face(path, student_embeddings)
+        sid = result.get('student_id')
+
+        if sid:
+            student = db.session.get(Student, sid)
+            student_name = student.user.name if student and student.user else 'Unknown'
+            roll = student.roll_number if student else ''
+            result['name'] = student_name
+            result['roll_number'] = roll
+        else:
+            result['name'] = None
+            result['roll_number'] = None
+
+        result['class_name'] = class_name
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
+
+@teacher_bp.route('/api/mark_present', methods=['POST'])
+@login_required
+def mark_present():
+    student_id = request.form.get('student_id', type=int)
+    class_name = request.form.get('class_name', '').strip()
+    score = request.form.get('score', 0.0, type=float)
+
+    if not student_id or not class_name:
+        return jsonify({'error': 'Missing student_id or class_name'}), 400
+
+    tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+    if not tc:
+        return jsonify({'error': 'Invalid class'}), 400
+
+    student = db.session.get(Student, student_id)
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+
+    # Check if already marked present today
+    existing = AttendanceRecord.query.filter_by(
+        student_id=student_id,
+        class_name=class_name,
+        date=datetime.date.today()
+    ).first()
+
+    if existing:
+        if existing.status == 'PRESENT':
+            return jsonify({
+                'success': True,
+                'already_present': True,
+                'name': student.user.name if student.user else 'Unknown',
+                'score': existing.score,
+            })
+        existing.status = 'PRESENT'
+        existing.score = score
+    else:
+        record = AttendanceRecord(
+            student_id=student_id,
+            class_name=class_name,
+            date=datetime.date.today(),
+            status='PRESENT',
+            score=score,
+        )
+        db.session.add(record)
+
+    db.session.commit()
+
+    # Send email notification
+    try:
+        if student.user and student.user.email_notifications:
+            from ..email import send_attendance_summary_email
+            today_records = AttendanceRecord.query.filter_by(
+                student_id=student_id, date=datetime.date.today()
+            ).all()
+            email_records = [{
+                'class_name': r.class_name,
+                'date': r.date.strftime('%d %b %Y') if r.date else '',
+                'status': r.status,
+            } for r in today_records]
+            all_records = AttendanceRecord.query.filter_by(student_id=student_id).all()
+            att_map = {}
+            for r in all_records:
+                if r.date:
+                    att_map[r.date.isoformat()] = r.status
+            total_present = sum(1 for v in att_map.values() if v == 'PRESENT')
+            total_days = len(att_map)
+            percentage = round(total_present / total_days * 100) if total_days else 0
+            send_attendance_summary_email(
+                student.user.email, student.user.name,
+                email_records, percentage
+            )
+            if student.parent_email:
+                send_attendance_summary_email(
+                    student.parent_email, student.user.name,
+                    email_records, percentage
+                )
+    except Exception as e:
+        print(f"[EMAIL] Attendance summary error: {e}")
+
+    name = student.user.name if student.user else 'Unknown'
+    return jsonify({
+        'success': True,
+        'already_present': False,
+        'name': name,
+        'score': score,
+        'student_id': student_id,
+    })
+
+
+@teacher_bp.route('/api/today_present')
+@login_required
+def today_present():
+    class_name = request.args.get('class_name', '').strip()
+    if not class_name:
+        return jsonify({'error': 'Missing class_name'}), 400
+
+    tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+    if not tc:
+        return jsonify({'error': 'Invalid class'}), 400
+
+    records = AttendanceRecord.query.filter_by(
+        class_name=class_name,
+        date=datetime.date.today()
+    ).all()
+
+    students = []
+    for r in records:
+        student = r.student
+        if student and student.user:
+            students.append({
+                'student_id': student.id,
+                'name': student.user.name,
+                'roll_number': student.roll_number,
+                'score': r.score,
+                'status': r.status,
+            })
+
+    return jsonify({'students': students})

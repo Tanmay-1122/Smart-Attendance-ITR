@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     role          = db.Column(db.String(10))   # 'student' or 'teacher'
     is_admin      = db.Column(db.Boolean, default=False)
     profile_photo = db.Column(db.String(200), nullable=True)  # filename in uploads/
+    email_notifications = db.Column(db.Boolean, default=True)
 
     @property
     def avatar_url(self):
@@ -23,6 +24,7 @@ class Student(db.Model):
     user_id        = db.Column(db.Integer, db.ForeignKey('user.id'))
     roll_number    = db.Column(db.String(20))
     face_embedding = db.Column(db.Text)   # stored as JSON string of 512 numbers
+    parent_email   = db.Column(db.String(100), nullable=True)
 
     # relationship to User
     user = db.relationship('User', backref=db.backref('student', uselist=False))
@@ -102,6 +104,64 @@ class StudentClass(db.Model):
     enrolled_at = db.Column(db.DateTime, default=datetime.datetime.now)
     student     = db.relationship('Student', backref=db.backref('enrolled_classes', lazy='dynamic'))
     tc          = db.relationship('TeacherClass', backref=db.backref('students', lazy='dynamic'))
+
+class PasswordResetToken(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used       = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now)
+
+class LeaveRequest(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    student_id   = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    class_name   = db.Column(db.String(50), nullable=False)
+    teacher_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    start_date   = db.Column(db.Date, nullable=False)
+    end_date     = db.Column(db.Date, nullable=False)
+    reason       = db.Column(db.Text, nullable=False)
+    status       = db.Column(db.String(10), default='PENDING')  # PENDING / APPROVED / REJECTED
+    teacher_note = db.Column(db.Text, nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.datetime.now)
+    decided_at   = db.Column(db.DateTime, nullable=True)
+
+    student = db.relationship('Student', backref='leave_requests')
+    teacher = db.relationship('User', backref='received_leave_requests')
+
+class Announcement(db.Model):
+    id               = db.Column(db.Integer, primary_key=True)
+    author_id        = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title            = db.Column(db.String(200), nullable=False)
+    body             = db.Column(db.Text, nullable=False)
+    target           = db.Column(db.String(20), default='ALL')  # ALL / CLASS
+    target_class     = db.Column(db.String(50), nullable=True)
+    priority         = db.Column(db.String(10), default='NORMAL')  # NORMAL / HIGH / URGENT
+    pinned           = db.Column(db.Boolean, default=False)
+    created_at       = db.Column(db.DateTime, default=datetime.datetime.now)
+    expires_at       = db.Column(db.DateTime, nullable=True)
+
+    author = db.relationship('User', backref='authored_announcements')
+
+class ClassSchedule(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    class_id    = db.Column(db.Integer, db.ForeignKey('teacher_class.id'), nullable=False)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    day_of_week = db.Column(db.Integer, nullable=False)  # 0=Mon .. 6=Sun
+    start_time  = db.Column(db.Time, nullable=False)
+    end_time    = db.Column(db.Time, nullable=False)
+    room        = db.Column(db.String(50), nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.datetime.now)
+
+    tc = db.relationship('TeacherClass', backref='schedules')
+
+class PushSubscription(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    endpoint   = db.Column(db.Text, nullable=False)
+    p256dh     = db.Column(db.Text, nullable=False)
+    auth_key   = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
 @login_manager.user_loader
 def load_user(user_id):

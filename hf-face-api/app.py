@@ -234,6 +234,11 @@ class ScanRequest(BaseModel):
     student_embeddings: dict  # {student_id: [[emb1...], [emb2...]]}
 
 
+class IdentifyRequest(BaseModel):
+    photo: str  # single base64 image
+    student_embeddings: dict  # {student_id: [[emb1...], [emb2...]]}
+
+
 # ---------- Endpoints ----------
 
 @app.get("/health")
@@ -409,3 +414,80 @@ def scan_faces(req: ScanRequest):
         })
 
     return {"results": results}
+
+
+@app.post("/api/identify")
+def identify_face(req: IdentifyRequest):
+    _load_models()
+
+    if not req.photo:
+        raise HTTPException(400, "Photo required")
+
+    if not req.student_embeddings:
+        raise HTTPException(400, "No student embeddings provided")
+
+    try:
+        img = _decode_image(req.photo)
+    except Exception:
+        raise HTTPException(400, "Invalid image")
+
+    img = _preprocess(img)
+    faces = _detect_faces(img)
+
+    if not faces:
+        return {"matched": False, "student_id": None, "score": 0.0, "status": "ABSENT", "reason": "no_face_detected"}
+
+    best_face = max(faces, key=lambda f: f['confidence'])
+    quality = _check_quality(best_face['crop'])
+    if not quality['valid']:
+        return {"matched": False, "student_id": None, "score": 0.0, "status": "ABSENT", "reason": quality['reason']}
+
+    crop = best_face['crop']
+    h, w = crop.shape[:2]
+    y1, y2 = int(h * 0.25), int(h * 0.55)
+    strip = crop[y1:y2, :]
+    gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 50, 150)
+    rows_with_edges = np.sum(edges > 0, axis=1)
+    if np.sum(rows_with_edges > w * 0.3) > 2:
+        crop = _enhance_glasses(crop)
+
+    emb = _get_embedding(crop)
+    if emb is None:
+        return {"matched": False, "student_id": None, "score": 0.0, "status": "ABSENT", "reason": "embedding_failed"}
+
+    all_stored = []
+    all_ids = []
+    for sid, embs in req.student_embeddings.items():
+        for emb_item in embs:
+            all_stored.append(emb_item)
+            all_ids.append(int(sid))
+
+    if not all_stored:
+        return {"matched": False, "student_id": None, "score": 0.0, "status": "ABSENT", "reason": "no_embeddings"}
+
+    stored_matrix = np.array(all_stored, dtype=np.float32)
+    stored_norms = np.linalg.norm(stored_matrix, axis=1)
+    stored_norms[stored_norms == 0] = 1.0
+
+    sid, score = _cosine_match(emb, stored_matrix, stored_norms, all_ids)
+
+    THRESH_HIGH = 0.55
+    THRESH_MID = 0.40
+
+    if score >= THRESH_HIGH:
+        status = 'PRESENT'
+    elif score >= THRESH_MID:
+        status = 'REVIEW'
+    else:
+        status = 'ABSENT'
+
+    gc.collect()
+
+    return {
+        "matched": status == 'PRESENT',
+        "student_id": sid,
+        "score": round(score, 4),
+        "status": status,
+        "reason": "",
+    }

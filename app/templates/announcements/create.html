@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page" style="max-width:480px;">
+
+  <div class="page-title">New Announcement</div>
+  <div class="page-sub">Post an announcement to students</div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="POST" action="/announcements/create">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="field">
+          <label class="label">Title</label>
+          <input type="text" name="title" class="input" placeholder="Announcement title" required>
+        </div>
+
+        <div class="field">
+          <label class="label">Body</label>
+          <textarea name="body" class="input" rows="5" placeholder="Write your announcement..." required style="resize:vertical;"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">Priority</label>
+          <select name="priority" class="select">
+            <option value="NORMAL">Normal</option>
+            <option value="HIGH">High</option>
+            <option value="URGENT">Urgent</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label">Target</label>
+          <select name="target" class="select" id="target-select" onchange="toggleClassField()">
+            <option value="ALL">All students</option>
+            <option value="CLASS">Specific class</option>
+          </select>
+        </div>
+
+        <div class="field" id="class-field" style="display:none;">
+          <label class="label">Class</label>
+          <select name="target_class" class="select">
+            <option value="" disabled selected>Select a class</option>
+            {% for tc in classes %}
+            <option value="{{ tc.name }}">{{ tc.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Post Announcement</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleClassField() {
+  var sel = document.getElementById('target-select');
+  var field = document.getElementById('class-field');
+  field.style.display = sel.value === 'CLASS' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

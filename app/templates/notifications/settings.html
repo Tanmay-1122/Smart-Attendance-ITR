@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page" style="max-width:480px;">
+
+  <div class="page-title">Notification Settings</div>
+  <div class="page-sub">Manage how you receive notifications</div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">Push Notifications</div>
+      <div id="push-status" style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:var(--radius-md);">
+        <div id="push-dot" style="width:10px;height:10px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div id="push-label" style="font-size:.88rem;font-weight:600;">Checking...</div>
+          <div id="push-desc" style="font-size:.78rem;color:var(--text-tertiary);"></div>
+        </div>
+        <button id="push-toggle" class="btn btn-sm btn-ghost" style="margin:0;display:none;width:auto;" onclick="togglePush()"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">What you'll be notified about</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <div>
+            <div style="font-size:.88rem;font-weight:600;">New Homework</div>
+            <div style="font-size:.75rem;color:var(--text-tertiary);">When a teacher posts homework in your class</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+          <div>
+            <div style="font-size:.88rem;font-weight:600;">Attendance Updates</div>
+            <div style="font-size:.75rem;color:var(--text-tertiary);">After attendance is saved for your class</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div>
+            <div style="font-size:.88rem;font-weight:600;">Leave Decisions</div>
+            <div style="font-size:.75rem;color:var(--text-tertiary);">When your leave request is approved or rejected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a href="javascript:history.back()" class="btn btn-ghost">Back</a>
+
+</div>
+
+<script>
+const VAPID_KEY = '{{ vapid_public_key }}';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function checkPushStatus() {
+  const dot = document.getElementById('push-dot');
+  const label = document.getElementById('push-label');
+  const desc = document.getElementById('push-desc');
+  const toggle = document.getElementById('push-toggle');
+
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    dot.style.background = 'var(--text-tertiary)';
+    label.textContent = 'Not supported';
+    desc.textContent = 'Your browser does not support push notifications';
+    return;
+  }
+
+  if (!VAPID_KEY) {
+    dot.style.background = 'var(--text-tertiary)';
+    label.textContent = 'Not configured';
+    desc.textContent = 'Push notifications are not enabled on this server';
+    return;
+  }
+
+  const permission = Notification.permission;
+  if (permission === 'denied') {
+    dot.style.background = 'var(--danger)';
+    label.textContent = 'Blocked';
+    desc.textContent = 'Notifications are blocked. Enable in browser settings.';
+    return;
+  }
+
+  const registration = await navigator.serviceWorker.ready;
+  const subscription = await registration.pushManager.getSubscription();
+
+  if (subscription) {
+    dot.style.background = 'var(--success)';
+    label.textContent = 'Active';
+    desc.textContent = 'You will receive push notifications';
+    toggle.style.display = 'inline-block';
+    toggle.textContent = 'Disable';
+    toggle.className = 'btn btn-sm btn-ghost';
+  } else {
+    if (permission === 'granted') {
+      dot.style.background = 'var(--warning)';
+      label.textContent = 'Paused';
+      desc.textContent = 'Notifications are paused. Re-enable to receive updates.';
+      toggle.style.display = 'inline-block';
+      toggle.textContent = 'Enable';
+      toggle.className = 'btn btn-sm btn-primary';
+    } else {
+      dot.style.background = 'var(--border)';
+      label.textContent = 'Disabled';
+      desc.textContent = 'Enable to receive homework and attendance notifications';
+      toggle.style.display = 'inline-block';
+      toggle.textContent = 'Enable';
+      toggle.className = 'btn btn-sm btn-primary';
+    }
+  }
+}
+
+async function togglePush() {
+  const subscription = await navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription());
+  if (subscription) {
+    await subscription.unsubscribe();
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    await fetch('/notifications/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    });
+  } else {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      const registration = await navigator.serviceWorker.ready;
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_KEY),
+      });
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+      await fetch('/notifications/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify(sub.toJSON()),
+      });
+    }
+  }
+  checkPushStatus();
+}
+
+checkPushStatus();
+</script>
+{% endblock %}

@@ -1,9 +1,12 @@
 import os
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import secrets
+import hashlib
+import datetime
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from ..models import User
+from ..models import User, PasswordResetToken, Student
 from .. import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -94,14 +97,96 @@ def profile():
                 flash('Invalid image format. Use JPG, PNG, GIF, or WebP.')
                 return redirect(url_for('auth.profile'))
 
+        # Email notifications toggle
+        current_user.email_notifications = request.form.get('email_notifications') == 'on'
+
+        # Parent email (students only)
+        if current_user.role == 'student':
+            parent_email = request.form.get('parent_email', '').strip()
+            student = Student.query.filter_by(user_id=current_user.id).first()
+            if student:
+                student.parent_email = parent_email if parent_email else None
+
         db.session.commit()
         flash('Profile updated!')
         return redirect(url_for('auth.profile'))
 
-    return render_template('auth/profile.html')
+    return render_template('auth/profile.html',
+                           vapid_public_key=current_app.config.get('VAPID_PUBLIC_KEY', ''))
 
 
 @auth_bp.route('/user/<int:user_id>')
 def user_profile(user_id):
     user = db.get_or_404(User, user_id)
     return render_template('auth/user_profile.html', profile_user=user)
+
+
+def _hash_token(token):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        user = User.query.filter_by(email=email).first()
+
+        # Always show success message to prevent email enumeration
+        if user:
+            # Clean up old tokens
+            PasswordResetToken.query.filter_by(user_id=user.id, used=True).delete()
+
+            token = secrets.token_urlsafe(32)
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token_hash=_hash_token(token),
+                expires_at=datetime.datetime.now() + datetime.timedelta(
+                    seconds=current_app.config.get('RESET_TOKEN_EXPIRY', 3600)
+                ),
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            from ..email import send_password_reset_email
+            send_password_reset_email(user.email, user.name, reset_url)
+
+        flash('If an account with that email exists, a reset link has been sent.')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/forgot_password.html')
+
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    token_hash = _hash_token(token)
+    reset_token = PasswordResetToken.query.filter_by(token_hash=token_hash, used=False).first()
+
+    if not reset_token or reset_token.expires_at < datetime.datetime.now():
+        flash('This reset link is invalid or has expired.')
+        return redirect(url_for('auth.forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm = request.form.get('confirm', '')
+
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.')
+            return render_template('auth/reset_password.html', token=token)
+
+        if password != confirm:
+            flash('Passwords do not match.')
+            return render_template('auth/reset_password.html', token=token)
+
+        user = db.session.get(User, reset_token.user_id)
+        if user:
+            user.password = generate_password_hash(password)
+            reset_token.used = True
+            db.session.commit()
+            flash('Password reset successful! Please log in.')
+            return redirect(url_for('auth.login'))
+
+        flash('Something went wrong. Please try again.')
+        return redirect(url_for('auth.forgot_password'))
+
+    return render_template('auth/reset_password.html', token=token)

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page" style="max-width:480px;">
+
+  <div class="page-title">Request Leave</div>
+  <div class="page-sub">Submit a leave request to your teacher</div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="POST" action="/leave/request">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="field">
+          <label class="label">Class</label>
+          {% if classes %}
+          <select name="class_name" class="select" required>
+            <option value="" disabled selected>Select a class</option>
+            {% for tc in classes %}
+            <option value="{{ tc.name }}">{{ tc.name }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="text" class="input" value="No classes" disabled>
+          {% endif %}
+        </div>
+
+        <div class="field">
+          <label class="label">Start date</label>
+          <input type="date" name="start_date" class="input" required min="{{ today }}">
+        </div>
+
+        <div class="field">
+          <label class="label">End date</label>
+          <input type="date" name="end_date" class="input" required min="{{ today }}">
+        </div>
+
+        <div class="field">
+          <label class="label">Reason</label>
+          <textarea name="reason" class="input" rows="3" placeholder="Why do you need leave?" required style="resize:vertical;"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Submit Request</button>
+      </form>
+    </div>
+  </div>
+
+  <a href="/leave/history" class="btn btn-ghost">View Leave History</a>
+
+</div>
+{% endblock %}
