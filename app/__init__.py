@@ -58,8 +58,12 @@ def create_app():
         return redirect(url_for('auth.login'))
 
     with app.app_context():
-        from .models import ChatMessage, Department, MarksRecord
+        from .models import ChatMessage, Department, MarksRecord, ApiConfig
         db.create_all()
+
+        # Load API configs from DB into app.config (env vars take precedence)
+        from .api_config import load_api_configs_into_app
+        load_api_configs_into_app(app)
 
         # Migration: add missing columns (handles upgrades)
         def _ensure_column(table, column, col_type, default_val=None):

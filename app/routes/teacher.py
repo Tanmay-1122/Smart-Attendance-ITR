@@ -659,7 +659,7 @@ def delete_homework(hw_id):
 def face_api_status():
     from ..face_client import check_api_health
     ok = check_api_health()
-    return jsonify({'available': ok, 'url': os.environ.get('HF_FACE_API_URL', '')})
+    return jsonify({'available': ok, 'url': current_app.config.get('HF_FACE_API_URL', '')})
 
 
 @teacher_bp.route('/api/scan_single', methods=['POST'])

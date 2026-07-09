@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="section-header">
+    <div class="page-title">API Keys & Configuration</div>
+    <div class="page-sub">Manage all API keys and service URLs. Changes take effect immediately — no server restart needed.</div>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th>Value</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, info in configs.items() %}
+            <tr>
+              <td style="font-weight:600;white-space:nowrap;vertical-align:middle;">
+                <div>{{ info.description }}</div>
+                <div style="font-size:.7rem;color:var(--text-3);font-weight:400;font-family:monospace;margin-top:2px;">{{ key }}</div>
+              </td>
+              <td style="vertical-align:middle;">
+                {% if info.is_secret %}
+                <div class="secret-field" style="display:flex;align-items:center;gap:6px;">
+                  <input type="password" name="{{ key }}" class="input secret-input" value="{{ info.db_value or '' }}" placeholder="Not set" style="font-family:monospace;font-size:.82rem;width:100%;">
+                  <button type="button" class="btn-ghost toggle-secret" style="padding:4px 8px;font-size:.75rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;white-space:nowrap;background:var(--surface);color:var(--text-2);" onclick="toggleSecret(this)">Show</button>
+                </div>
+                {% else %}
+                <input type="text" name="{{ key }}" class="input" value="{{ info.db_value or '' }}" placeholder="Not set" style="font-family:monospace;font-size:.82rem;width:100%;">
+                {% endif %}
+              </td>
+              <td style="vertical-align:middle;white-space:nowrap;">
+                {% if info.source == 'DB' %}
+                <span class="badge badge-present">DB</span>
+                {% elif info.source == 'Env' %}
+                <span class="badge badge-review">Env</span>
+                {% else %}
+                <span class="badge badge-absent">Not Set</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <span style="font-size:.78rem;color:var(--text-3);">Changes are stored in the database and applied immediately.</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="card mt-3" style="background:var(--brand-light);border:1px solid var(--brand);">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;color:var(--brand);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--text);margin-bottom:4px;">How it works</div>
+        <ul style="margin:0;padding-left:16px;font-size:.82rem;color:var(--text-2);line-height:1.6;">
+          <li>Values <strong>saved here</strong> override environment variables.</li>
+          <li>To revert to the env var, clear the field and save — the <strong>Env</strong> badge will appear.</li>
+          <li>All changes take effect <strong>immediately</strong> — no restart required.</li>
+          <li>Secret keys (tokens, passwords) are masked by default — use <strong>Show</strong> to reveal.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleSecret(btn) {
+    const input = btn.closest('.secret-field').querySelector('.secret-input');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Hide';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Show';
+    }
+  }
+</script>
+{% endblock %}

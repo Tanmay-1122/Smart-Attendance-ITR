@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
-from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord, Department
+from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord, Department, ApiConfig
 from .. import db
+from ..api_config import KNOWN_KEYS, SECRET_KEYS
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -339,3 +341,43 @@ def delete_user(user_id):
     db.session.commit()
     flash(f'User "{user.name}" has been deleted.')
     return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/api-keys', methods=['GET', 'POST'])
+@admin_required
+def api_keys():
+    if request.method == 'POST':
+        keys_to_update = [k for k in KNOWN_KEYS if k in request.form]
+        for key in keys_to_update:
+            value = request.form.get(key, '').strip()
+            config = ApiConfig.query.filter_by(key=key).first()
+            if config:
+                config.value = value if value else None
+            else:
+                config = ApiConfig(
+                    key=key,
+                    value=value if value else None,
+                    description=KNOWN_KEYS.get(key, ''),
+                    is_secret=key in SECRET_KEYS,
+                )
+                db.session.add(config)
+
+            current_app.config[key] = value if value else ''
+
+        db.session.commit()
+        flash('API keys updated successfully!')
+        return redirect(url_for('admin.api_keys'))
+
+    configs = {}
+    for key, desc in KNOWN_KEYS.items():
+        db_row = ApiConfig.query.filter_by(key=key).first()
+        env_val = os.environ.get(key, '')
+        app_val = current_app.config.get(key, '')
+        configs[key] = {
+            'description': desc,
+            'is_secret': key in SECRET_KEYS,
+            'db_value': db_row.value if db_row else None,
+            'source': 'DB' if (db_row and db_row.value) else 'Env' if env_val else 'Not Set',
+        }
+
+    return render_template('admin/api_keys.html', configs=configs)

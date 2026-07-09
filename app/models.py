@@ -176,6 +176,15 @@ class PushSubscription(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
 
+class ApiConfig(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    key         = db.Column(db.String(100), unique=True, nullable=False)
+    value       = db.Column(db.Text, nullable=True)
+    description = db.Column(db.String(300), nullable=True)
+    is_secret   = db.Column(db.Boolean, default=True)
+    updated_at  = db.Column(db.DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+
+
 class MarksRecord(db.Model):
     id              = db.Column(db.Integer, primary_key=True)
     student_id      = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
