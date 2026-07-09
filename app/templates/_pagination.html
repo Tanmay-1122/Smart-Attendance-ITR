@@ -1,0 +1,46 @@
+<nav class="pag" style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+  {% if pagination.has_prev %}
+  <a href="?{{ url_without_page }}&page={{ pagination.prev_num }}" class="btn btn-ghost" style="padding:6px 14px;font-size:.82rem;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><polyline points="15 18 9 12 15 6"/></svg>
+    Prev
+  </a>
+  {% else %}
+  <span class="btn btn-ghost" style="padding:6px 14px;font-size:.82rem;opacity:.35;cursor:not-allowed;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><polyline points="15 18 9 12 15 6"/></svg>
+    Prev
+  </span>
+  {% endif %}
+
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      <a href="?{{ url_without_page }}&page={{ p }}" class="pag-dot" style="
+        width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
+        font-size:.82rem;font-weight:600;text-decoration:none;transition:all .15s;
+        {% if p == pagination.page %}
+          background:var(--brand);color:#fff;
+        {% else %}
+          background:var(--surface);color:var(--text-2);border:1px solid var(--border);
+        {% endif %}
+      ">{{ p }}</a>
+    {% else %}
+      <span style="color:var(--text-3);font-size:.82rem;padding:0 2px;">&hellip;</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if pagination.has_next %}
+  <a href="?{{ url_without_page }}&page={{ pagination.next_num }}" class="btn btn-ghost" style="padding:6px 14px;font-size:.82rem;">
+    Next
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-left:4px;"><polyline points="9 18 15 12 9 6"/></svg>
+  </a>
+  {% else %}
+  <span class="btn btn-ghost" style="padding:6px 14px;font-size:.82rem;opacity:.35;cursor:not-allowed;">
+    Next
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-left:4px;"><polyline points="9 18 15 12 9 6"/></svg>
+  </span>
+  {% endif %}
+
+  <span style="font-size:.75rem;color:var(--text-3);margin-left:8px;">
+    Page {{ pagination.page }} of {{ pagination.pages }}
+    &middot; {{ pagination.total }} total
+  </span>
+</nav>

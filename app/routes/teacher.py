@@ -495,6 +495,7 @@ def panel_delete_student(student_id):
 @login_required
 def attendance_records():
     class_name = request.args.get('class_name', '').strip()
+    page = request.args.get('page', 1, type=int)
     my_classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
 
     if not class_name:
@@ -520,16 +521,19 @@ def attendance_records():
         flash('Invalid class.')
         return redirect(url_for('teacher.attendance_records'))
 
-    records = AttendanceRecord.query.filter_by(class_name=class_name).order_by(AttendanceRecord.date.desc()).all()
+    pagination = AttendanceRecord.query.filter_by(class_name=class_name).order_by(AttendanceRecord.date.desc()).paginate(page=page, per_page=20, error_out=False)
 
     by_date = {}
-    for r in records:
+    for r in pagination.items:
         d = r.date
         if d not in by_date:
             by_date[d] = []
         by_date[d].append(r)
 
-    return render_template('teacher/attendance_detail.html', tc=tc, by_date=by_date, total_records=len(records))
+    args_no_page = request.args.copy()
+    args_no_page.pop('page', None)
+    url_without_page = args_no_page.urlencode()
+    return render_template('teacher/attendance_detail.html', tc=tc, by_date=by_date, total_records=pagination.total, pagination=pagination, url_without_page=url_without_page)
 
 
 @teacher_bp.route('/homework', methods=['GET', 'POST'])
@@ -621,10 +625,14 @@ def homework():
 
         return redirect(url_for('teacher.homework'))
 
-    # GET — show form + recent homework
-    recent = Homework.query.order_by(Homework.created_at.desc()).limit(20).all()
+    # GET — show form + paginated homework
+    page = request.args.get('page', 1, type=int)
+    pagination = Homework.query.order_by(Homework.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
-    return render_template('teacher/homework.html', homework_list=recent, classes=classes)
+    args_no_page = request.args.copy()
+    args_no_page.pop('page', None)
+    url_without_page = args_no_page.urlencode()
+    return render_template('teacher/homework.html', homework_list=pagination.items, classes=classes, pagination=pagination, url_without_page=url_without_page)
 
 
 @teacher_bp.route('/homework/delete/<int:hw_id>', methods=['POST'])
@@ -862,14 +870,18 @@ def today_present():
 @login_required
 def marks():
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
-    sent_sessions = db.session.query(
+    page = request.args.get('page', 1, type=int)
+    pagination = db.session.query(
         MarksRecord.scan_session_id, MarksRecord.subject, MarksRecord.exam_type,
         MarksRecord.class_name, MarksRecord.created_at
     ).filter(
         MarksRecord.sent == True,
         MarksRecord.class_name.in_([c.name for c in classes])
-    ).distinct().order_by(MarksRecord.created_at.desc()).limit(20).all()
-    return render_template('teacher/marks.html', classes=classes, sent_sessions=sent_sessions)
+    ).distinct().order_by(MarksRecord.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    args_no_page = request.args.copy()
+    args_no_page.pop('page', None)
+    url_without_page = args_no_page.urlencode()
+    return render_template('teacher/marks.html', classes=classes, sent_sessions=pagination.items, pagination=pagination, url_without_page=url_without_page)
 
 
 @teacher_bp.route('/marks/scan', methods=['POST'])

@@ -23,7 +23,7 @@
     </form>
   </div>
 
-  <div class="section-label" style="margin-bottom:8px;">Users ({{ users|length }})</div>
+  <div class="section-label" style="margin-bottom:8px;">Users ({{ pagination.total }})</div>
   {% if users %}
   <div class="card">
     {% for user in users %}
@@ -116,6 +116,12 @@
   <div class="card empty">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <p>No users found matching your search.</p>
+  </div>
+  {% endif %}
+
+  {% if pagination.pages > 1 %}
+  <div style="display:flex;justify-content:center;margin-top:12px;">
+    {% include "_pagination.html" %}
   </div>
   {% endif %}
 

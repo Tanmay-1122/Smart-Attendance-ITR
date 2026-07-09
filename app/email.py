@@ -3,8 +3,10 @@ import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
+from .tasks import run_async
 
 
+@run_async
 def send_email(to, subject, html_body):
     """Send an HTML email via SMTP. Returns True on success."""
     smtp_host = current_app.config.get('SMTP_HOST', '')

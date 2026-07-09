@@ -67,10 +67,14 @@
   </div>
   {% endif %}
 
-  <div style="display:flex;gap:10px;margin-top:14px;">
+  <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
     <a href="/teacher/export?class_name={{ tc.name }}" class="btn btn-primary">Export CSV</a>
     <a href="/teacher/attendance" class="btn btn-ghost">Back to all classes</a>
   </div>
+
+  {% if pagination.pages > 1 %}
+  {% include "_pagination.html" %}
+  {% endif %}
 
 </div>
 {% endblock %}

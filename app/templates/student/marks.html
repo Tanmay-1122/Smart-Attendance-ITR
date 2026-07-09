@@ -45,6 +45,9 @@
       </table>
     </div>
   </div>
+  {% if pagination and pagination.pages > 1 %}
+  {% include "_pagination.html" %}
+  {% endif %}
   {% else %}
   <div class="card">
     <div class="empty" style="padding:40px;text-align:center;color:var(--text-3);">

@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
 from ..models import PushSubscription, TeacherClass, StudentClass, Student, Homework, User
 from .. import db
+from ..tasks import run_async
 
 notifications_bp = Blueprint('notifications', __name__, url_prefix='/notifications')
 
@@ -58,6 +59,7 @@ def unsubscribe():
     return jsonify({'ok': True})
 
 
+@run_async
 def send_push_notification(user_id, title, body, url='/'):
     """Send web push notification to a user's subscribed browsers."""
     vapid_private = current_app.config.get('VAPID_PRIVATE_KEY', '')

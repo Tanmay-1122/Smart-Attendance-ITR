@@ -82,6 +82,7 @@ def dashboard():
 def users():
     role_filter = request.args.get('role', '').strip()
     search = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
 
     query = User.query
     if role_filter == 'teacher':
@@ -100,9 +101,13 @@ def users():
             User.name.ilike(f'%{search}%') | User.email.ilike(f'%{search}%')
         )
 
-    users = query.order_by(User.name).all()
+    pagination = query.order_by(User.name).paginate(page=page, per_page=25, error_out=False)
+    users = pagination.items
     departments = Department.query.order_by(Department.name).all()
-    return render_template('admin/users.html', users=users, role_filter=role_filter, search=search, departments=departments)
+    args_no_page = request.args.copy()
+    args_no_page.pop('page', None)
+    url_without_page = args_no_page.urlencode()
+    return render_template('admin/users.html', users=users, role_filter=role_filter, search=search, departments=departments, pagination=pagination, url_without_page=url_without_page)
 
 
 @admin_bp.route('/assign-department/<int:user_id>', methods=['POST'])

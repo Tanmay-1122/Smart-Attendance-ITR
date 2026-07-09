@@ -224,10 +224,15 @@ def unenroll_class(class_id):
 @student_bp.route('/homework')
 @login_required
 def homework():
-    all_hw = Homework.query.order_by(Homework.created_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    pagination = Homework.query.order_by(Homework.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    all_hw = pagination.items
     for hw in all_hw:
         hw.download_url = get_file_download_url(hw.file_id) if hw.file_id else None
-    return render_template('student/homework.html', homework_list=all_hw)
+    args_no_page = request.args.copy()
+    args_no_page.pop('page', None)
+    url_without_page = args_no_page.urlencode()
+    return render_template('student/homework.html', homework_list=all_hw, pagination=pagination, url_without_page=url_without_page)
 
 
 @student_bp.route('/homework/<int:hw_id>')
@@ -298,7 +303,12 @@ def homework_summarize(hw_id):
 def marks():
     student = Student.query.filter_by(user_id=current_user.id).first()
     if not student:
-        return render_template('student/marks.html', records=[])
+        return render_template('student/marks.html', records=[], pagination=None)
 
-    records = MarksRecord.query.filter_by(student_id=student.id).order_by(MarksRecord.created_at.desc()).all()
-    return render_template('student/marks.html', records=records)
+    page = request.args.get('page', 1, type=int)
+    pagination = MarksRecord.query.filter_by(student_id=student.id).order_by(MarksRecord.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    records = pagination.items
+    args_no_page = request.args.copy()
+    args_no_page.pop('page', None)
+    url_without_page = args_no_page.urlencode()
+    return render_template('student/marks.html', records=records, pagination=pagination, url_without_page=url_without_page)

@@ -89,6 +89,9 @@
     </div>
     {% endfor %}
   </div>
+  {% if pagination.pages > 1 %}
+  {% include "_pagination.html" %}
+  {% endif %}
   {% endif %}
 
 </div>
