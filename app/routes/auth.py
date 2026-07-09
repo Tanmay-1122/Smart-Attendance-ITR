@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from ..models import User, PasswordResetToken, Student
+from ..models import User, PasswordResetToken, Student, Department
 from .. import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -64,24 +64,29 @@ def register():
         name     = request.form['name']
         email    = request.form['email']
         password = request.form['password']
+        dept_id  = request.form.get('department_id')
 
         existing = User.query.filter_by(email=email).first()
         if existing:
             flash('Email already registered')
             return redirect(url_for('auth.register'))
 
+        department_id = int(dept_id) if dept_id and dept_id.isdigit() else None
+
         new_user = User(
             name     = name,
             email    = email,
             password = generate_password_hash(password),
-            role     = 'student'
+            role     = 'student',
+            department_id = department_id
         )
         db.session.add(new_user)
         db.session.commit()
         flash('Account created! Please login. Note: Only admins can grant teacher/HOD/Principal access.')
         return redirect(url_for('auth.login'))
 
-    return render_template('auth/register.html')
+    departments = Department.query.order_by(Department.name).all()
+    return render_template('auth/register.html', departments=departments)
 
 
 @auth_bp.route('/logout')
@@ -97,6 +102,7 @@ def profile():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         photo = request.files.get('profile_photo')
+        dept_id = request.form.get('department_id')
 
         if name:
             current_user.name = name
@@ -113,6 +119,10 @@ def profile():
                 flash('Invalid image format. Use JPG, PNG, GIF, or WebP.')
                 return redirect(url_for('auth.profile'))
 
+        # Update department if user is student or teacher
+        if not current_user.is_admin and current_user.role in ['student', 'teacher']:
+            current_user.department_id = int(dept_id) if dept_id and dept_id.isdigit() else None
+
         # Email notifications toggle
         current_user.email_notifications = request.form.get('email_notifications') == 'on'
 
@@ -127,7 +137,9 @@ def profile():
         flash('Profile updated!')
         return redirect(url_for('auth.profile'))
 
+    departments = Department.query.order_by(Department.name).all()
     return render_template('auth/profile.html',
+                           departments=departments,
                            vapid_public_key=current_app.config.get('VAPID_PUBLIC_KEY', ''))
 
 

@@ -99,7 +99,20 @@ def users():
         )
 
     users = query.order_by(User.name).all()
-    return render_template('admin/users.html', users=users, role_filter=role_filter, search=search)
+    departments = Department.query.order_by(Department.name).all()
+    return render_template('admin/users.html', users=users, role_filter=role_filter, search=search, departments=departments)
+
+
+@admin_bp.route('/assign-department/<int:user_id>', methods=['POST'])
+@admin_required
+def assign_department(user_id):
+    user = db.get_or_404(User, user_id)
+    dept_id = request.form.get('department_id')
+    user.department_id = int(dept_id) if dept_id and dept_id.isdigit() else None
+    db.session.commit()
+    flash(f'Department updated for {user.name}.')
+    return redirect(request.referrer or url_for('admin.users'))
+
 
 
 @admin_bp.route('/promote/<int:user_id>', methods=['POST'])

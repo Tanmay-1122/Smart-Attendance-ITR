@@ -89,6 +89,23 @@
       </div>
     </div>
 
+    <!-- Department (students & teachers only) -->
+    {% if not current_user.is_admin and current_user.role in ['student', 'teacher'] %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="field" style="margin-bottom:0;">
+          <label class="label">Department</label>
+          <select name="department_id" class="select">
+            <option value="">Select your department (Optional)</option>
+            {% for d in departments %}
+            <option value="{{ d.id }}" {% if current_user.department_id == d.id %}selected{% endif %}>{{ d.name }} ({{ d.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Parent Email (students only) -->
     {% if current_user.role == 'student' %}
     <div class="card mb-3">

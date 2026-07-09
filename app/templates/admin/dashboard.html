@@ -70,7 +70,15 @@
           Seed Default Accounts
         </button>
       </form>
+      {% if current_user.role == 'teacher' %}
       <a href="/teacher/dashboard" class="btn btn-sm btn-ghost" style="font-size:.78rem;">Back to dashboard</a>
+      {% elif current_user.role == 'hod' %}
+      <a href="/hod/dashboard" class="btn btn-sm btn-ghost" style="font-size:.78rem;">Back to dashboard</a>
+      {% elif current_user.role == 'principal' %}
+      <a href="/principal/dashboard" class="btn btn-sm btn-ghost" style="font-size:.78rem;">Back to dashboard</a>
+      {% elif current_user.role == 'student' %}
+      <a href="/student/dashboard" class="btn btn-sm btn-ghost" style="font-size:.78rem;">Back to dashboard</a>
+      {% endif %}
     </div>
   </div>
 
