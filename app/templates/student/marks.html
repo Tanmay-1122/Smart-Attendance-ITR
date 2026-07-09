@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="section-header">
+    <div class="page-title">My Results</div>
+    <div class="page-sub">Exam marks and percentages published by your teachers</div>
+  </div>
+
+  {% if records %}
+  <div class="card">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Exam</th>
+            <th>Class</th>
+            <th>Marks</th>
+            <th>Percentage</th>
+            <th>Published</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          {% set pct = r.percentage if r.percentage is not none else (r.marks_obtained / r.total_marks * 100) if r.total_marks else None %}
+          <tr>
+            <td style="font-weight:600;">{{ r.subject }}</td>
+            <td><span class="badge badge-present">{{ r.exam_type }}</span></td>
+            <td>{{ r.class_name }}</td>
+            <td>{{ r.marks_obtained }} / {{ r.total_marks }}</td>
+            <td>
+              {% if pct is not none %}
+              <span style="font-weight:700;color:{% if pct >= 75 %}#10B981{% elif pct >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">
+                {{ '%.1f'|format(pct) }}%
+              </span>
+              {% else %}
+              <span style="color:var(--text-3);">—</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.82rem;color:var(--text-2);">{{ r.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="empty" style="padding:40px;text-align:center;color:var(--text-3);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:12px;">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+      </svg>
+      <div style="font-size:.95rem;font-weight:600;">No results published yet</div>
+      <div style="font-size:.82rem;margin-top:4px;">Your teacher will publish marks here after scanning a marksheet.</div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

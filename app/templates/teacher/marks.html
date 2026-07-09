@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="section-header">
+    <div class="page-title">Marks Scanner</div>
+    <div class="page-sub">Upload a marksheet image — marks & percentages are automatically sent to students</div>
+  </div>
+
+  <!-- Scan Form -->
+  <div class="card mb-3">
+    <form method="POST" action="/teacher/marks/scan" enctype="multipart/form-data" id="marks-scan-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="field mb-2">
+        <label class="label">Class</label>
+        {% if classes %}
+        <select name="class_name" class="select" required>
+          <option value="" disabled selected>Select a class</option>
+          {% for tc in classes %}
+          <option value="{{ tc.name }}">{{ tc.name }} ({{ tc.students.count() }} students)</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <p class="empty" style="padding:8px 0;font-size:.85rem;color:var(--text-3);">No classes created yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="field mb-2">
+        <label class="label">Subject</label>
+        <input type="text" name="subject" class="input" placeholder="e.g. Mathematics" required>
+      </div>
+
+      <div class="field mb-2">
+        <label class="label">Exam Type</label>
+        <select name="exam_type" class="select">
+          <option value="midterm">Midterm</option>
+          <option value="final">Final Exam</option>
+          <option value="quiz">Quiz</option>
+          <option value="assignment">Assignment</option>
+          <option value="practical">Practical</option>
+          <option value="exam">Exam</option>
+        </select>
+      </div>
+
+      <div class="field mb-3">
+        <label class="label">Marksheet Image</label>
+        <div id="drop-zone" style="border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--text-3);margin-bottom:8px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <div style="color:var(--text-2);font-size:.9rem;font-weight:600;">Drop marksheet image here or click to browse</div>
+          <div style="color:var(--text-3);font-size:.78rem;margin-top:4px;">Supports JPG, PNG — clear photos work best</div>
+          <input type="file" name="marksheet_image" id="file-input" accept="image/*" style="display:none;" required>
+        </div>
+        <div id="file-preview" style="display:none;margin-top:12px;">
+          <img id="preview-img" src="" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:.82rem;color:var(--text-2);margin-top:6px;" id="file-name"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="scan-marks-btn">
+        <span id="scan-marks-text">Scan & Extract Marks</span>
+        <span id="scan-marks-loading" style="display:none;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="animation:spin .7s linear infinite;"><circle cx="12" cy="12" r="9" stroke-dasharray="30 56"/></svg>
+          Scanning with AI...
+        </span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Previously Sent Sessions -->
+  {% if sent_sessions %}
+  <div class="section-header" style="margin-top:24px;">
+    <div class="section-label">Previously Sent Results</div>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Exam</th>
+            <th>Sent On</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ss in sent_sessions %}
+          <tr>
+            <td style="font-weight:600;">{{ ss.class_name }}</td>
+            <td>{{ ss.subject }}</td>
+            <td><span class="badge badge-present">{{ ss.exam_type }}</span></td>
+            <td style="color:var(--text-2);font-size:.85rem;">{{ ss.created_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const filePreview = document.getElementById('file-preview');
+  const previewImg = document.getElementById('preview-img');
+  const fileName = document.getElementById('file-name');
+  const scanForm = document.getElementById('marks-scan-form');
+  const scanBtn = document.getElementById('scan-marks-btn');
+  const scanText = document.getElementById('scan-marks-text');
+  const scanLoading = document.getElementById('scan-marks-loading');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--brand)';
+    dropZone.style.background = 'var(--brand-light)';
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background = 'transparent';
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background = 'transparent';
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      showPreview(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) showPreview(fileInput.files[0]);
+  });
+
+  function showPreview(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      filePreview.style.display = 'block';
+      fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      dropZone.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  scanForm.addEventListener('submit', () => {
+    scanBtn.disabled = true;
+    scanBtn.style.opacity = '.7';
+    scanText.style.display = 'none';
+    scanLoading.style.display = 'inline-flex';
+  });
+</script>
+{% endblock %}

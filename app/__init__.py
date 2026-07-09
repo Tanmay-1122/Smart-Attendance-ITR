@@ -58,7 +58,7 @@ def create_app():
         return redirect(url_for('auth.login'))
 
     with app.app_context():
-        from .models import ChatMessage, Department
+        from .models import ChatMessage, Department, MarksRecord
         db.create_all()
 
         # Migration: add missing columns (handles upgrades)

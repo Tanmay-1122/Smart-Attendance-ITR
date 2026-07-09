@@ -175,6 +175,22 @@ class PushSubscription(db.Model):
     auth_key   = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
+
+class MarksRecord(db.Model):
+    id              = db.Column(db.Integer, primary_key=True)
+    student_id      = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    class_name      = db.Column(db.String(100), nullable=False)
+    subject         = db.Column(db.String(100), nullable=False)
+    exam_type       = db.Column(db.String(50), default='exam')
+    marks_obtained  = db.Column(db.Float, nullable=False)
+    total_marks     = db.Column(db.Float, nullable=False)
+    percentage      = db.Column(db.Float, nullable=True)
+    scan_session_id = db.Column(db.String(36), nullable=False)
+    sent            = db.Column(db.Boolean, default=False)
+    created_at      = db.Column(db.DateTime, default=datetime.datetime.now)
+
+    student = db.relationship('Student', backref='marks_records')
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))

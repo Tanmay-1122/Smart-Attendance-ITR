@@ -134,3 +134,13 @@ def notify_leave_decision(leave_obj, status):
             f'Your leave for {leave_obj.class_name} has been {label}.',
             '/leave/history'
         )
+
+
+def notify_marks(user_id, subject_name, marks_obtained, total_marks):
+    """Send push notification about exam marks."""
+    send_push_notification(
+        user_id,
+        'Exam Result Published',
+        f'{subject_name}: {marks_obtained}/{total_marks}',
+        '/student/marks'
+    )

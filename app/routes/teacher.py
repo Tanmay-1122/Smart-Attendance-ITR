@@ -1,13 +1,16 @@
 import os
+import uuid
 import base64 as b64lib
 import datetime
+import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response, current_app, jsonify
 from flask_login import login_required, current_user
-from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass
+from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass, MarksRecord
 from .. import db
 from ..telegram.bot import send_homework, get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
-from ..email import send_attendance_summary_email, send_homework_alert_email
+from ..email import send_attendance_summary_email, send_homework_alert_email, send_marks_email
+from ..marks_ocr import extract_marks_from_image
 from werkzeug.utils import secure_filename
 import pandas as pd
 
@@ -18,7 +21,6 @@ teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 def dashboard():
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.created_at.desc()).all()
     preselected = request.args.get('class', '')
-    import json
     classes_json = json.dumps([{'id': c.id, 'name': c.name} for c in classes])
     return render_template('teacher/dashboard.html', classes=classes, preselected=preselected, classes_json=classes_json)
 
@@ -173,7 +175,6 @@ def scan():
 
     results = []
     try:
-        import json
         from ..face_client import scan_faces
 
         student_embeddings = {}
@@ -852,4 +853,185 @@ def today_present():
                 'status': r.status,
             })
 
-    return jsonify({'students': students})
+    return jsonify({'students': students})
+
+
+# ---------- Marks Scanning & Auto-Sending ----------
+
+@teacher_bp.route('/marks')
+@login_required
+def marks():
+    classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
+    sent_sessions = db.session.query(
+        MarksRecord.scan_session_id, MarksRecord.subject, MarksRecord.exam_type,
+        MarksRecord.class_name, MarksRecord.created_at
+    ).filter(
+        MarksRecord.sent == True,
+        MarksRecord.class_name.in_([c.name for c in classes])
+    ).distinct().order_by(MarksRecord.created_at.desc()).limit(20).all()
+    return render_template('teacher/marks.html', classes=classes, sent_sessions=sent_sessions)
+
+
+@teacher_bp.route('/marks/scan', methods=['POST'])
+@login_required
+def marks_scan():
+    class_name = request.form.get('class_name', '').strip()
+    subject = request.form.get('subject', '').strip()
+    exam_type = request.form.get('exam_type', 'exam').strip()
+    image_file = request.files.get('marksheet_image')
+
+    if not all([class_name, subject, image_file]):
+        flash('Class name, subject, and marksheet image are required.')
+        return redirect(url_for('teacher.marks'))
+
+    tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+    if not tc:
+        flash('Invalid class.')
+        return redirect(url_for('teacher.marks'))
+
+    upload_dir = os.path.join('app', 'static', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f'markscan_{current_user.id}_{uuid.uuid4().hex[:8]}.jpg'
+    filepath = os.path.join(upload_dir, filename)
+    image_file.save(filepath)
+
+    extracted = extract_marks_from_image(filepath)
+    if not extracted:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        flash('Could not extract marks from the image. Please try a clearer photo.')
+        return redirect(url_for('teacher.marks'))
+
+    enrolled_students = StudentClass.query.filter_by(class_id=tc.id).all()
+    enrolled_map = {}
+    for sc in enrolled_students:
+        student = sc.student
+        if student and student.user:
+            enrolled_map[student.roll_number] = student
+            enrolled_map[student.user.name.lower().strip()] = student
+
+    matched = []
+    unmatched = []
+    for entry in extracted:
+        roll = str(entry.get('roll_number', '')).strip()
+        name = str(entry.get('name', '')).strip()
+        student = enrolled_map.get(roll) or enrolled_map.get(name.lower())
+        if student:
+            matched.append({
+                'student_id': student.id,
+                'roll_number': student.roll_number,
+                'name': student.user.name,
+                'marks_obtained': entry['marks_obtained'],
+                'total_marks': entry['total_marks'],
+                'percentage': entry.get('percentage'),
+            })
+        else:
+            unmatched.append(entry)
+
+    session_id = uuid.uuid4().hex[:12]
+
+    return render_template('teacher/marks_preview.html',
+                           class_name=class_name,
+                           subject=subject,
+                           exam_type=exam_type,
+                           session_id=session_id,
+                           matched=matched,
+                           unmatched=unmatched,
+                           image_path=f'/static/uploads/{filename}')
+
+
+@teacher_bp.route('/marks/send', methods=['POST'])
+@login_required
+def marks_send():
+    class_name = request.form.get('class_name', '').strip()
+    subject = request.form.get('subject', '').strip()
+    exam_type = request.form.get('exam_type', 'exam').strip()
+    session_id = request.form.get('session_id', '').strip()
+
+    if not session_id:
+        flash('Session ID missing.')
+        return redirect(url_for('teacher.marks'))
+
+    student_ids = request.form.getlist('student_ids[]')
+    marks_values = request.form.getlist('marks_obtained[]')
+    total_values = request.form.getlist('total_marks[]')
+    pct_values = request.form.getlist('percentage[]')
+
+    saved_count = 0
+    for i, sid in enumerate(student_ids):
+        try:
+            marks = float(marks_values[i]) if i < len(marks_values) else 0
+            total = float(total_values[i]) if i < len(total_values) else 0
+            pct = float(pct_values[i]) if i < len(pct_values) and pct_values[i] else None
+        except (ValueError, IndexError):
+            continue
+
+        record = MarksRecord(
+            student_id=int(sid),
+            class_name=class_name,
+            subject=subject,
+            exam_type=exam_type,
+            marks_obtained=marks,
+            total_marks=total,
+            percentage=pct,
+            scan_session_id=session_id,
+            sent=False,
+        )
+        db.session.add(record)
+        saved_count += 1
+
+    db.session.commit()
+
+    # Send notifications
+    sent_count = 0
+    for i, sid in enumerate(student_ids):
+        try:
+            marks = float(marks_values[i]) if i < len(marks_values) else 0
+            total = float(total_values[i]) if i < len(total_values) else 0
+            pct = float(pct_values[i]) if i < len(pct_values) and pct_values[i] else None
+        except (ValueError, IndexError):
+            continue
+
+        student = db.session.get(Student, int(sid))
+        if not student or not student.user:
+            continue
+
+        try:
+            send_marks_email(
+                to=student.user.email,
+                name=student.user.name,
+                subject_name=subject,
+                exam_type=exam_type,
+                marks_obtained=marks,
+                total_marks=total,
+                percentage=pct,
+                class_name=class_name,
+            )
+            if student.parent_email:
+                send_marks_email(
+                    to=student.parent_email,
+                    name=student.user.name,
+                    subject_name=subject,
+                    exam_type=exam_type,
+                    marks_obtained=marks,
+                    total_marks=total,
+                    percentage=pct,
+                    class_name=class_name,
+                )
+            from ..routes.notifications import notify_marks
+            notify_marks(student.user.id, subject, marks, total)
+
+            record = MarksRecord.query.filter_by(
+                scan_session_id=session_id, student_id=int(sid)
+            ).first()
+            if record:
+                record.sent = True
+
+            sent_count += 1
+        except Exception as e:
+            print(f"[MARKS] Failed to notify student {sid}: {e}")
+
+    db.session.commit()
+
+    flash(f'Saved {saved_count} records and sent notifications to {sent_count} students!')
+    return redirect(url_for('teacher.marks'))

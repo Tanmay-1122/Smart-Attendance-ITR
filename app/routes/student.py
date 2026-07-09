@@ -6,7 +6,7 @@ from collections import defaultdict
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import func
-from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass
+from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass, MarksRecord
 from .. import db
 from ..telegram.bot import get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
@@ -291,3 +291,14 @@ def homework_summarize(hw_id):
         return jsonify({'ok': True, 'summary': summary})
 
     return jsonify({'ok': False, 'error': 'Failed to generate summary.'})
+
+
+@student_bp.route('/marks')
+@login_required
+def marks():
+    student = Student.query.filter_by(user_id=current_user.id).first()
+    if not student:
+        return render_template('student/marks.html', records=[])
+
+    records = MarksRecord.query.filter_by(student_id=student.id).order_by(MarksRecord.created_at.desc()).all()
+    return render_template('student/marks.html', records=records)

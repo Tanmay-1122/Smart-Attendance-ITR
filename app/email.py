@@ -122,6 +122,41 @@ def send_homework_alert_email(to, name, hw_title, class_name, teacher_name, due_
     return send_email(to, f'New Homework: {hw_title}', html)
 
 
+def send_marks_email(to, name, subject_name, exam_type, marks_obtained, total_marks, percentage, class_name):
+    """Send marks/result notification email."""
+    pct_str = f"{percentage:.1f}%" if percentage is not None else "N/A"
+    color = '#10B981' if (percentage or 0) >= 75 else '#F59E0B' if (percentage or 0) >= 40 else '#EF4444'
+
+    html = f"""
+    <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+      <div style="background:linear-gradient(135deg,#6366F1,#7C3AED);border-radius:16px;padding:24px;text-align:center;color:#fff;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:1.2rem;font-weight:800;">Exam Result Published</h1>
+        <p style="margin:8px 0 0;opacity:0.8;font-size:0.85rem;">{class_name} — {exam_type}</p>
+      </div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:24px;">
+        <p style="color:#374151;font-size:0.95rem;margin:0 0 16px;">Hi <strong>{name}</strong>,</p>
+        <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F3F4F6;">
+            <span style="color:#6B7280;font-size:0.88rem;">Subject</span>
+            <span style="font-weight:700;font-size:0.95rem;color:#1E1B4B;">{subject_name}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F3F4F6;">
+            <span style="color:#6B7280;font-size:0.88rem;">Marks Obtained</span>
+            <span style="font-weight:700;font-size:0.95rem;color:#1E1B4B;">{marks_obtained} / {total_marks}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;">
+            <span style="color:#6B7280;font-size:0.88rem;">Percentage</span>
+            <span style="font-weight:700;font-size:1.1rem;color:{color};">{pct_str}</span>
+          </div>
+        </div>
+        <p style="text-align:center;color:#9CA3AF;font-size:0.82rem;margin:0;">Log in to SmartAttend to view all your results.</p>
+      </div>
+      <p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:16px;">SmartAttend — AI-powered attendance management</p>
+    </div>
+    """
+    return send_email(to, f'Exam Result: {subject_name} — {marks_obtained}/{total_marks}', html)
+
+
 def send_leave_decision_email(to, name, status, class_name, start_date, end_date, teacher_note=None):
     """Send leave request decision email."""
     color = '#10B981' if status == 'APPROVED' else '#EF4444'
