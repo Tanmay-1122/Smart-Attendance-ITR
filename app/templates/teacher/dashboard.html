@@ -153,14 +153,25 @@
         <video id="cont-video" autoplay playsinline style="width:100%;border-radius:12px;display:block;background:#000;"></video>
         <canvas id="cont-canvas" style="display:none;"></canvas>
         <div class="cam-border"></div>
+        <div id="cont-capture-overlay" style="display:none;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);color:#fff;font-size:.78rem;font-weight:600;padding:6px 14px;border-radius:100px;pointer-events:none;">
+          <span id="cont-capture-status">Face captured — identifying...</span>
+        </div>
       </div>
 
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
-        <button id="cont-start-btn" class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Start Scanning
+      <div id="cont-photo-preview" style="display:none;margin-bottom:10px;">
+        <img id="cont-captured-img" src="" style="width:100%;max-height:200px;border-radius:8px;border:1.5px solid var(--brand);object-fit:cover;">
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;flex-wrap:wrap;">
+        <button id="cont-capture-btn" class="btn btn-primary" style="width:auto;padding:10px 18px;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;margin-right:6px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Capture &amp; Identify
         </button>
-        <button id="cont-stop-btn" class="btn btn-ghost" style="display:none;">
+        <button id="cont-start-btn" class="btn btn-ghost" style="width:auto;padding:10px 18px;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Auto-Scan
+        </button>
+        <button id="cont-stop-btn" class="btn btn-ghost" style="display:none;width:auto;padding:10px 18px;">
           <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;margin-right:6px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
           Stop
         </button>
@@ -212,6 +223,8 @@
       startBatchCamera();
     } else {
       stopBatchCamera();
+      document.getElementById('cont-photo-preview').style.display = 'none';
+      startContCameraOnly();
       loadTodayPresent();
     }
   }
@@ -586,11 +599,96 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function captureSinglePhoto() {
+    if (!selectedClassName) {
+      setContStatus('Select a class first', 'var(--warning, #f59e0b)');
+      return;
+    }
+    if (!contVideo || !contVideo.videoWidth) {
+      setContStatus('Camera not ready', '#ef4444');
+      return;
+    }
+
+    contCanvas.width  = contVideo.videoWidth || 640;
+    contCanvas.height = contVideo.videoHeight || 480;
+    const ctx = contCanvas.getContext('2d');
+    ctx.drawImage(contVideo, 0, 0, contCanvas.width, contCanvas.height);
+    const dataUrl = contCanvas.toDataURL('image/jpeg', 0.75);
+
+    // Show preview
+    const preview = document.getElementById('cont-photo-preview');
+    const previewImg = document.getElementById('cont-captured-img');
+    previewImg.src = dataUrl;
+    preview.style.display = 'block';
+
+    // Show overlay
+    const overlay = document.getElementById('cont-capture-overlay');
+    overlay.style.display = 'block';
+    document.getElementById('cont-capture-status').textContent = 'Identifying face...';
+    setContStatus('Identifying...', '#f59e0b');
+
+    const formData = new URLSearchParams();
+    formData.set('photo_data', dataUrl);
+    formData.set('class_name', selectedClassName);
+
+    fetch('/teacher/api/scan_single', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: formData.toString(),
+    })
+    .then(r => r.json())
+    .then(data => {
+      overlay.style.display = 'none';
+      if (data.matched && data.status === 'PRESENT' && data.student_id) {
+        if (!markedToday.has(data.student_id)) {
+          return markStudentPresent(data);
+        } else {
+          setContStatus('Already marked present', '#10B981');
+          showMatch(data.name || 'Student', data.roll_number || '', data.score);
+        }
+      } else {
+        var reason = data.reason || 'No match found';
+        setContStatus('Not identified: ' + reason.replace(/_/g, ' '), '#ef4444');
+      }
+    })
+    .catch(err => {
+      overlay.style.display = 'none';
+      console.error('[CAPTURE]', err);
+      setContStatus('Error identifying face', '#ef4444');
+    });
+  }
+
+  // Start camera when tab switches to continuous mode (without auto-scan)
+  function startContCameraOnly() {
+    if (contVideo && contVideo.srcObject) return;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } } })
+      .then(stream => {
+        contVideo.srcObject = stream;
+        setContStatus('Camera ready — press Capture', 'var(--text-3)');
+      })
+      .catch(() => {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            contVideo.srcObject = stream;
+            setContStatus('Camera ready — press Capture', 'var(--text-3)');
+          })
+          .catch(e => {
+            setContStatus('Camera unavailable', '#ef4444');
+          });
+      });
+  }
+
   // Event listeners for continuous controls
   const contStartBtn = document.getElementById('cont-start-btn');
   const contStopBtn  = document.getElementById('cont-stop-btn');
+  const contCaptureBtn = document.getElementById('cont-capture-btn');
   if (contStartBtn) contStartBtn.addEventListener('click', startContinuousScan);
   if (contStopBtn)  contStopBtn.addEventListener('click', stopContinuousScan);
+  if (contCaptureBtn) contCaptureBtn.addEventListener('click', captureSinglePhoto);
 
   // Load today's present list when continuous mode is first shown
   if (selectedClassName) loadTodayPresent();
