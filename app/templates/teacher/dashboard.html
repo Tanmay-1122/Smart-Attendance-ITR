@@ -150,7 +150,7 @@
 
     <div id="cont-camera-area">
       <div class="cam-wrap mb-2" style="position:relative;">
-        <video id="cont-video" autoplay playsinline style="width:100%;border-radius:12px;display:block;background:#000;cursor:pointer;"></video>
+        <video id="cont-video" autoplay playsinline style="width:100%;border-radius:12px;display:block;background:#000;cursor:pointer;transform:scaleX(-1);"></video>
         <canvas id="cont-canvas" style="display:none;"></canvas>
         <div class="cam-border"></div>
 
@@ -506,7 +506,10 @@
     contCanvas.width  = contVideo.videoWidth || 640;
     contCanvas.height = contVideo.videoHeight || 480;
     const ctx = contCanvas.getContext('2d');
+    ctx.translate(contCanvas.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(contVideo, 0, 0, contCanvas.width, contCanvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dataUrl = contCanvas.toDataURL('image/jpeg', 0.7);
 
     setContStatus('Scanning face...', '#f59e0b');
@@ -647,7 +650,10 @@
     contCanvas.width  = contVideo.videoWidth || 640;
     contCanvas.height = contVideo.videoHeight || 480;
     const ctx = contCanvas.getContext('2d');
+    ctx.translate(contCanvas.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(contVideo, 0, 0, contCanvas.width, contCanvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dataUrl = contCanvas.toDataURL('image/jpeg', 0.75);
 
     // Show preview
