@@ -305,6 +305,42 @@ button { font-family: inherit; }
 .cam-wrap video { width: 100%; height: 100%; object-fit: cover; }
 .cam-border { position: absolute; inset: 0; border-radius: var(--radius-lg); border: 2px solid rgba(99,102,241,0.5); pointer-events: none; }
 
+.shutter-btn:hover { transform: translateX(-50%) scale(1.08); background: rgba(255,255,255,0.35); }
+.shutter-btn:active { transform: translateX(-50%) scale(0.92); }
+.shutter-btn:active span { transform: scale(0.8); }
+.shutter-btn.processing { border-color: rgba(99,102,241,0.9); animation: shutterPulse 1s ease-in-out infinite; }
+.shutter-btn.processing span { background: var(--brand); }
+.shutter-btn.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+
+.scan-ring-inner, .scan-ring-outer {
+  position: absolute; top: 50%; left: 50%;
+  border-radius: 50%; border: 2.5px solid rgba(99,102,241,0.7);
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+}
+.scan-ring-inner { width: 60px; height: 60px; animation: scanPulse 1.2s ease-in-out infinite; }
+.scan-ring-outer { width: 140px; height: 140px; animation: scanPulse 1.2s ease-in-out 0.4s infinite; }
+.scan-ring-beam {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 2px; height: 100%;
+  background: linear-gradient(180deg, transparent 0%, rgba(99,102,241,0.6) 40%, rgba(129,140,248,0.9) 50%, rgba(99,102,241,0.6) 60%, transparent 100%);
+  animation: scanSweep 2s ease-in-out infinite;
+}
+
+@keyframes shutterPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(99,102,241,0); }
+}
+@keyframes scanPulse {
+  0% { transform: translate(-50%,-50%) scale(0.85); opacity: .3; }
+  50% { transform: translate(-50%,-50%) scale(1.15); opacity: .8; }
+  100% { transform: translate(-50%,-50%) scale(0.85); opacity: .3; }
+}
+@keyframes scanSweep {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+
 .auth-root {
   min-height: 100vh;
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4338ca 50%, #6366f1 75%, #7c3aed 100%);
