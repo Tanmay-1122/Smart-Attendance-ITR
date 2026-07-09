@@ -12,6 +12,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script>
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (!theme) {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
 
@@ -236,6 +245,9 @@
     SmartAttend
   </div>
   <div class="bar-right">
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);border:none;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.2s var(--ease);font-size:1.15rem;flex-shrink:0;">
+      <span id="theme-icon">🌙</span>
+    </button>
     <a href="/auth/profile" class="bar-avatar-link" title="Profile">
       <div class="bar-avatar">
         {% if current_user.profile_photo %}
@@ -299,6 +311,20 @@ document.querySelectorAll('.btn').forEach(function(btn) {
     btn.style.setProperty('--ripple-y', ((e.clientY - rect.top) / rect.height * 100) + '%');
   });
 });
+
+function toggleTheme() {
+  var html = document.documentElement;
+  var current = html.getAttribute('data-theme');
+  var next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+(function() {
+  var theme = document.documentElement.getAttribute('data-theme');
+  document.getElementById('theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+})();
 </script>
 
 </body>
