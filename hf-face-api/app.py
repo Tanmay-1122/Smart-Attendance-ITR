@@ -180,7 +180,6 @@ def _get_embedding(face_crop: np.ndarray) -> np.ndarray | None:
         embs = []
         for model_name in ['ArcFace', 'Facenet512']:
             try:
-                # Try passing numpy array directly (newer DeepFace versions)
                 objs = DeepFace.represent(
                     img_path=face_crop,
                     model_name=model_name,
@@ -318,7 +317,6 @@ def enroll_student(req: EnrollRequest):
             print(f"[ENROLL] Photo {idx+1}: quality check result = {quality}")
             if quality['valid']:
                 crop = f['crop']
-                # detect glasses heuristic
                 h, w = crop.shape[:2]
                 y1, y2 = int(h * 0.25), int(h * 0.55)
                 strip = crop[y1:y2, :]
