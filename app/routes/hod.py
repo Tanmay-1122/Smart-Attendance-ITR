@@ -127,3 +127,24 @@ def students():
         student_data.append({'student': s, 'user': s.user, 'enrolled': enrolled})
 
     return render_template('hod/students.html', dept=dept, students=student_data, search=search)
+
+
+@hod_bp.route('/teachers/update-subjects', methods=['POST'])
+@hod_required
+def update_teacher_subjects():
+    dept = db.session.get(Department, current_user.department_id)
+    if not dept:
+        return {'error': 'No department assigned'}, 400
+
+    user_id = request.form.get('user_id', type=int)
+    subjects = request.form.get('subjects', '').strip()
+
+    teacher = db.session.get(User, user_id)
+    if not teacher or teacher.role != 'teacher' or teacher.department_id != dept.id:
+        flash('Invalid teacher.')
+        return redirect(url_for('hod.teachers'))
+
+    teacher.subjects = subjects if subjects else None
+    db.session.commit()
+    flash(f'Subjects updated for {teacher.name}.')
+    return redirect(url_for('hod.teachers'))

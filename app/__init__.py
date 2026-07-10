@@ -112,6 +112,7 @@ def create_app():
         _ensure_column('marks_record', 'sent', 'BOOLEAN', 'FALSE')
         _ensure_column('marks_record', 'exam_type', 'VARCHAR(50)', "'exam'")
         _ensure_column('student', 'parent_phone', 'VARCHAR(20)')
+        _ensure_column('user', 'subjects', 'VARCHAR(300)')
 
         # Seed departments if empty
         if Department.query.count() == 0:

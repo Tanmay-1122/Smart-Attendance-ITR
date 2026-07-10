@@ -106,6 +106,21 @@
     </div>
     {% endif %}
 
+    <!-- Subjects (teachers only) -->
+    {% if current_user.role == 'teacher' %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="field" style="margin-bottom:0;">
+          <label class="label">Subjects you teach</label>
+          <input type="text" name="subjects" class="input"
+                 value="{{ current_user.subjects or '' }}"
+                 placeholder="e.g. Mathematics, Physics, Computer Science">
+          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Separate multiple subjects with commas.</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Parent Contact (students only) -->
     {% if current_user.role == 'student' %}
     <div class="card mb-3">

@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     profile_photo = db.Column(db.String(200), nullable=True)  # filename in uploads/
     email_notifications = db.Column(db.Boolean, default=True)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=True)
+    subjects      = db.Column(db.String(300), nullable=True)  # comma-separated for teachers
 
     department = db.relationship('Department', backref='members', foreign_keys=[department_id])
 

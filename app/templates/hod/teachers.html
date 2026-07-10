@@ -6,7 +6,7 @@
     <a href="/hod/dashboard" style="color:var(--text-secondary);font-size:1.2rem;">&larr;</a>
     <div class="page-title" style="margin:0;">Teachers &mdash; {{ dept.name }}</div>
   </div>
-  <div class="page-sub">All teachers in your department</div>
+  <div class="page-sub">Manage teachers and their subjects in your department</div>
 
   <div class="card mb-3" style="padding:14px 18px;">
     <form method="GET" action="/hod/teachers" style="display:flex;gap:8px;align-items:center;">
@@ -23,7 +23,7 @@
     <div class="tbl-wrap">
       <table class="tbl">
         <thead>
-          <tr><th>Name</th><th>Email</th><th>Classes</th><th>Students</th></tr>
+          <tr><th>Name</th><th>Email</th><th>Subjects</th><th>Classes</th><th>Students</th><th></th></tr>
         </thead>
         <tbody>
           {% for t in teachers %}
@@ -37,12 +37,26 @@
                   {{ t.user.name[0]|upper }}
                   {% endif %}
                 </div>
-                <span class="text-truncate" style="max-width:160px;">{{ t.user.name }}</span>
+                <span class="text-truncate" style="max-width:140px;">{{ t.user.name }}</span>
               </div>
             </td>
-            <td style="color:var(--text-secondary);font-size:.8rem;">{{ t.user.email }}</td>
+            <td style="color:var(--text-secondary);font-size:.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.user.email }}</td>
+            <td id="subjects-display-{{ t.user.id }}" style="font-size:.8rem;max-width:200px;">
+              {% if t.user.subjects %}
+              <div style="display:flex;gap:3px;flex-wrap:wrap;">
+                {% for sub in t.user.subjects.split(',') %}
+                <span style="background:var(--brand-light);color:var(--brand);padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:600;">{{ sub.strip() }}</span>
+                {% endfor %}
+              </div>
+              {% else %}
+              <span style="color:var(--text-tertiary);font-style:italic;">Not set</span>
+              {% endif %}
+            </td>
             <td>{{ t.classes }}</td>
             <td>{{ t.students }}</td>
+            <td>
+              <button type="button" class="btn btn-sm btn-ghost" style="font-size:.7rem;padding:4px 8px;" onclick="openSubjectsModal({{ t.user.id }}, this.dataset.name, this.dataset.subjects)" data-name="{{ t.user.name }}" data-subjects="{{ t.user.subjects or '' }}">Edit Subjects</button>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -57,4 +71,38 @@
   {% endif %}
 
 </div>
+
+<!-- Subjects Modal -->
+<div id="subjects-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSubjectsModal()">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+    <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Edit Subjects</div>
+    <div id="modal-teacher-name" style="font-size:.82rem;color:var(--text-tertiary);margin-bottom:16px;"></div>
+    <form id="subjects-form" method="POST" action="/hod/teachers/update-subjects" style="display:flex;flex-direction:column;gap:12px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="user_id" id="modal-user-id">
+      <div class="field" style="margin:0;">
+        <label class="label">Subjects (comma-separated)</label>
+        <input type="text" name="subjects" id="modal-subjects-input" class="input" placeholder="e.g. Mathematics, Physics">
+        <div style="font-size:.72rem;color:var(--text-tertiary);margin-top:4px;">Separate multiple subjects with commas.</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-ghost" onclick="closeSubjectsModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openSubjectsModal(userId, userName, subjects) {
+  document.getElementById('modal-user-id').value = userId;
+  document.getElementById('modal-teacher-name').textContent = userName;
+  document.getElementById('modal-subjects-input').value = subjects;
+  document.getElementById('subjects-modal').style.display = 'flex';
+}
+
+function closeSubjectsModal() {
+  document.getElementById('subjects-modal').style.display = 'none';
+}
+</script>
 {% endblock %}

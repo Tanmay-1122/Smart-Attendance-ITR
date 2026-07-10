@@ -134,6 +134,11 @@ def profile():
         if not current_user.is_admin and current_user.role in ['student', 'teacher']:
             current_user.department_id = int(dept_id) if dept_id and dept_id.isdigit() else None
 
+        # Subjects (teachers only)
+        if current_user.role == 'teacher':
+            subjects = request.form.get('subjects', '').strip()
+            current_user.subjects = subjects if subjects else None
+
         # Email notifications toggle
         current_user.email_notifications = request.form.get('email_notifications') == 'on'
 
