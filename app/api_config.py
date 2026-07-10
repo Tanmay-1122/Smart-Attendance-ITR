@@ -41,6 +41,9 @@ KNOWN_KEYS = {
     'SMTP_USER': 'SMTP Username',
     'SMTP_PASS': 'SMTP Password',
     'SMTP_FROM': 'SMTP From Address',
+    'TWILIO_ACCOUNT_SID': 'Twilio Account SID',
+    'TWILIO_AUTH_TOKEN': 'Twilio Auth Token',
+    'TWILIO_WHATSAPP_FROM': 'Twilio WhatsApp From Number',
     'VAPID_PRIVATE_KEY': 'VAPID Private Key (Web Push)',
     'VAPID_PUBLIC_KEY': 'VAPID Public Key (Web Push)',
     'VAPID_EMAIL': 'VAPID Contact Email',
@@ -48,5 +51,5 @@ KNOWN_KEYS = {
 
 SECRET_KEYS = {
     'TELEGRAM_BOT_TOKEN', 'GOOGLE_AI_KEY', 'SMTP_PASS',
-    'VAPID_PRIVATE_KEY',
+    'TWILIO_AUTH_TOKEN', 'VAPID_PRIVATE_KEY',
 }
