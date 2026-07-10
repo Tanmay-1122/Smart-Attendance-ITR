@@ -13,7 +13,7 @@ analytics_bp = Blueprint('analytics', __name__, url_prefix='/analytics')
 @login_required
 def index():
     if current_user.role == 'teacher':
-        return redirect(url_for('analytics.teacher_overview'))
+        return redirect(url_for('analytics.student_overview'))
     return redirect(url_for('analytics.student_overview'))
 
 

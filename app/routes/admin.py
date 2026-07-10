@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlencode
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
@@ -106,7 +107,7 @@ def users():
     departments = Department.query.order_by(Department.name).all()
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = args_no_page.urlencode()
+    url_without_page = urlencode(args_no_page.items(multi=True))
     return render_template('admin/users.html', users=users, role_filter=role_filter, search=search, departments=departments, pagination=pagination, url_without_page=url_without_page)
 
 

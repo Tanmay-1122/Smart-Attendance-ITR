@@ -3,6 +3,7 @@ import uuid
 import base64 as b64lib
 import datetime
 import json
+from urllib.parse import urlencode
 from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response, current_app, jsonify
 from flask_login import login_required, current_user
 from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass, MarksRecord
@@ -532,7 +533,7 @@ def attendance_records():
 
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = args_no_page.urlencode()
+    url_without_page = urlencode(args_no_page.items(multi=True))
     return render_template('teacher/attendance_detail.html', tc=tc, by_date=by_date, total_records=pagination.total, pagination=pagination, url_without_page=url_without_page)
 
 
@@ -631,7 +632,7 @@ def homework():
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = args_no_page.urlencode()
+    url_without_page = urlencode(args_no_page.items(multi=True))
     return render_template('teacher/homework.html', homework_list=pagination.items, classes=classes, pagination=pagination, url_without_page=url_without_page)
 
 
@@ -880,7 +881,7 @@ def marks():
     ).distinct().order_by(MarksRecord.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = args_no_page.urlencode()
+    url_without_page = urlencode(args_no_page.items(multi=True))
     return render_template('teacher/marks.html', classes=classes, sent_sessions=pagination.items, pagination=pagination, url_without_page=url_without_page)
 
 
