@@ -2,12 +2,18 @@
 {% block content %}
 <div class="page">
 
-  <div class="page-title">Manage Schedule</div>
-  <div class="page-sub">Set up recurring class time slots</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+    <div>
+      <div class="page-title" style="margin:0;">Manage Schedule</div>
+      <div class="page-sub" style="margin:0;">Set up recurring class time slots</div>
+    </div>
+    <a href="/schedule/" class="btn btn-ghost btn-sm">View Timetable</a>
+  </div>
 
   <!-- Add Schedule Form -->
   <div class="card mb-3">
     <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">Add New Time Slot</div>
       <form method="POST" action="/schedule/add">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
@@ -58,31 +64,123 @@
 
   <!-- Existing Schedules -->
   {% for tc in classes %}
-  {% if by_class[tc.id] %}
-  <div class="section-label" style="margin-bottom:8px;">{{ tc.name }}</div>
-  <div class="card mb-3">
-    {% for s in by_class[tc.id] %}
-    <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
-      <div>
-        <div style="font-weight:600;font-size:.88rem;">{{ days[s.day_of_week] }}</div>
-        <div style="font-size:.78rem;color:var(--text-tertiary);">
-          {{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}
-          {% if s.room %} · {{ s.room }}{% endif %}
+  {% set tc_slots = by_class[tc.id] %}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;margin-top:{% if loop.index > 1 %}16px{% else %}0{% endif %};">
+    <div class="section-label" style="margin:0;">{{ tc.name }}</div>
+    {% if tc_slots %}
+    <span style="font-size:.72rem;color:var(--text-3);">{{ tc_slots|length }} slot(s)</span>
+    {% endif %}
+  </div>
+
+  {% if tc_slots %}
+  <div class="card mb-2">
+    {% for s in tc_slots %}
+    <div class="schedule-row" data-schedule-id="{{ s.id }}"
+         style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-weight:600;font-size:.88rem;">{{ days[s.day_of_week] }}</span>
+          <span style="font-size:.78rem;color:var(--text-tertiary);">{{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}</span>
+          {% if s.room %}
+          <span style="font-size:.72rem;color:var(--brand);font-weight:500;">📍 {{ s.room }}</span>
+          {% endif %}
         </div>
       </div>
-      <form method="POST" action="/schedule/delete/{{ s.id }}" onsubmit="return confirm('Remove this time slot?');" style="margin:0;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </form>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button type="button" class="btn btn-sm btn-ghost edit-btn" style="font-size:.72rem;padding:4px 10px;" onclick="openEdit({{ s.id }})">Edit</button>
+        <form method="POST" action="/schedule/delete/{{ s.id }}" onsubmit="return confirm('Remove this time slot?');" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+    <!-- Inline edit form (hidden by default) -->
+    <div id="edit-form-{{ s.id }}" class="edit-form" style="display:none;padding:12px 16px;border-top:1px solid var(--border-light);background:var(--brand-light);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:500px;">
+        <div class="field" style="margin:0;">
+          <label class="label" style="font-size:.72rem;">Day</label>
+          <select class="select edit-day" style="font-size:.82rem;">
+            {% for i in range(7) %}
+            <option value="{{ i }}" {% if i == s.day_of_week %}selected{% endif %}>{{ days[i] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field" style="margin:0;">
+          <label class="label" style="font-size:.72rem;">Room</label>
+          <input type="text" class="input edit-room" value="{{ s.room or '' }}" style="font-size:.82rem;" placeholder="Room">
+        </div>
+        <div class="field" style="margin:0;">
+          <label class="label" style="font-size:.72rem;">Start</label>
+          <input type="time" class="input edit-start" value="{{ s.start_time.strftime('%H:%M') }}" style="font-size:.82rem;">
+        </div>
+        <div class="field" style="margin:0;">
+          <label class="label" style="font-size:.72rem;">End</label>
+          <input type="time" class="input edit-end" value="{{ s.end_time.strftime('%H:%M') }}" style="font-size:.82rem;">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveEdit({{ s.id }})">Save</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeEdit({{ s.id }})">Cancel</button>
+        <span id="edit-status-{{ s.id }}" style="font-size:.72rem;color:var(--text-tertiary);align-self:center;"></span>
+      </div>
     </div>
     {% endfor %}
+  </div>
+  {% else %}
+  <div class="card mb-2">
+    <div class="card-body empty" style="padding:16px;">
+      <p style="font-size:.82rem;color:var(--text-tertiary);margin:0;">No time slots yet for this class.</p>
+    </div>
   </div>
   {% endif %}
   {% endfor %}
 
-  <a href="/schedule/" class="btn btn-ghost">View Timetable</a>
-
 </div>
+
+<script>
+function openEdit(scheduleId) {
+  document.querySelectorAll('.edit-form').forEach(f => f.style.display = 'none');
+  document.getElementById('edit-form-' + scheduleId).style.display = 'block';
+}
+
+function closeEdit(scheduleId) {
+  document.getElementById('edit-form-' + scheduleId).style.display = 'none';
+}
+
+function saveEdit(scheduleId) {
+  const form = document.getElementById('edit-form-' + scheduleId);
+  const data = {
+    day_of_week: parseInt(form.querySelector('.edit-day').value),
+    start_time: form.querySelector('.edit-start').value,
+    end_time: form.querySelector('.edit-end').value,
+    room: form.querySelector('.edit-room').value,
+  };
+
+  const statusEl = document.getElementById('edit-status-' + scheduleId);
+  statusEl.textContent = 'Saving...';
+
+  fetch('/schedule/edit/' + scheduleId, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+    body: JSON.stringify(data),
+  })
+  .then(r => r.json())
+  .then(resp => {
+    if (resp.success) {
+      statusEl.textContent = 'Saved!';
+      statusEl.style.color = 'var(--success)';
+      setTimeout(() => location.reload(), 800);
+    } else {
+      statusEl.textContent = resp.error || 'Error saving';
+      statusEl.style.color = 'var(--danger)';
+    }
+  })
+  .catch(() => {
+    statusEl.textContent = 'Network error';
+    statusEl.style.color = 'var(--danger)';
+  });
+}
+</script>
 {% endblock %}

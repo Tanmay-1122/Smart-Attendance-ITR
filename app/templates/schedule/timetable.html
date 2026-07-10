@@ -17,31 +17,63 @@
     </div>
   </div>
 
+  <!-- Controls -->
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-2);cursor:pointer;">
+      <input type="checkbox" id="toggle-weekend" checked onchange="toggleWeekend()"
+             style="width:16px;height:16px;accent-color:var(--brand);">
+      Show weekends
+    </label>
+    <span style="font-size:.75rem;color:var(--text-3);margin-left:auto;">Week of {{ now.strftime('%b %d, %Y') }}</span>
+  </div>
+
   <!-- Weekly Grid -->
-  <div class="card">
+  <div class="card" style="position:relative;overflow:hidden;padding:0;">
     <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;min-width:600px;">
+      <table id="timetable-grid" style="width:100%;border-collapse:collapse;min-width:600px;table-layout:fixed;">
         <thead>
-          <tr>
-            <th style="padding:12px 8px;text-align:left;font-size:.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);width:80px;">Time</th>
-            {% for d in day_abbr %}
-            <th style="padding:12px 8px;text-align:center;font-size:.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);">{{ d }}</th>
+          <tr style="position:sticky;top:0;z-index:2;">
+            <th style="padding:10px 8px;text-align:left;font-size:.7rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--border);width:65px;">Time</th>
+            {% for i in range(7) %}
+            <th class="day-header day-{{ i }} {% if i >= 5 %}weekend-day{% endif %}"
+                style="padding:10px 4px;text-align:center;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--border);
+                {% if i == now.weekday() %}background:var(--brand-light);color:var(--brand);{% else %}color:var(--text-tertiary);{% endif %}">
+              <div>{{ day_abbr[i] }}</div>
+              {% if i == now.weekday() %}
+              <div style="font-size:.58rem;font-weight:400;opacity:.7;">Today</div>
+              {% endif %}
+            </th>
             {% endfor %}
           </tr>
         </thead>
-        <tbody>
+        <tbody id="timetable-body">
           {% for hour in range(8, 20) %}
-          <tr>
-            <td style="padding:8px;font-size:.78rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-light);">{{ '%02d:00'|format(hour) }}</td>
+          <tr class="hour-row" data-hour="{{ hour }}">
+            <td style="padding:2px 6px;font-size:.7rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-light);vertical-align:top;padding-top:6px;width:65px;{% if hour % 2 == 0 %}background:var(--surface-alt);{% endif %}">
+              {{ '%02d:00'|format(hour) }}
+            </td>
             {% for day_idx in range(7) %}
-            <td style="padding:4px;border-bottom:1px solid var(--border-light);vertical-align:top;">
+            <td class="day-cell day-{{ day_idx }} {% if day_idx >= 5 %}weekend-day{% endif %}"
+                style="padding:0;border-bottom:1px solid var(--border-light);position:relative;height:60px;overflow:visible;
+                {% if hour % 2 == 0 %}background:var(--surface-alt);{% endif %}
+                {% if day_idx == now.weekday() and hour == now.hour %}background:rgba(99,102,241,0.06);{% endif %}">
               {% for s in by_day[day_idx] %}
               {% if s.start_time.hour == hour %}
-              <div style="background:linear-gradient(135deg,var(--brand),#7C3AED);color:#fff;border-radius:8px;padding:8px;margin-bottom:4px;font-size:.75rem;box-shadow:0 2px 6px rgba(99,102,241,0.2);">
-                <div style="font-weight:700;">{{ s.tc.name if s.tc else 'Class' }}</div>
-                <div style="opacity:.8;font-size:.68rem;margin-top:2px;">{{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}</div>
+              {% set colors = ['#6366F1,#7C3AED', '#7C3AED,#EC4899', '#EC4899,#F59E0B', '#10B981,#059669', '#3B82F6,#6366F1', '#8B5CF6,#7C3AED', '#F59E0B,#D97706', '#EF4444,#DC2626'] %}
+              {% set ci = (s.tc.id if s.tc else s.id) % 8 %}
+              <div class="schedule-slot"
+                   style="position:absolute;top:{{ s.top_offset * 100 }}%;left:2px;right:2px;height:{{ s.duration_hours * 100 }}%;min-height:28px;z-index:1;
+                   background:linear-gradient(135deg,{{ colors[ci] }});color:#fff;border-radius:8px;padding:4px 6px;font-size:.72rem;
+                   box-shadow:0 2px 6px rgba(0,0,0,0.15);overflow:hidden;
+                   display:flex;flex-direction:column;justify-content:center;"
+                   title="{{ s.tc.name if s.tc else 'Class' }} ({{ s.start_time.strftime('%H:%M') }}–{{ s.end_time.strftime('%H:%M') }})">
+                <div style="font-weight:700;font-size:.75rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ s.tc.name if s.tc else 'Class' }}</div>
+                <div style="opacity:.85;font-size:.62rem;line-height:1.2;white-space:nowrap;">{{ s.start_time.strftime('%I:%M %p') }}–{{ s.end_time.strftime('%I:%M %p') }}</div>
                 {% if s.room %}
-                <div style="opacity:.7;font-size:.65rem;margin-top:1px;">{{ s.room }}</div>
+                <div style="opacity:.75;font-size:.6rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 {{ s.room }}</div>
+                {% endif %}
+                {% if s.tc and s.tc.teacher and current_user.role in ('student', 'hod', 'principal') %}
+                <div style="opacity:.7;font-size:.58rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">👤 {{ s.tc.teacher.name }}</div>
                 {% endif %}
               </div>
               {% endif %}
@@ -53,30 +85,112 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Current time indicator -->
+    <div id="time-indicator" style="display:none;position:absolute;left:0;right:0;z-index:3;pointer-events:none;padding-left:65px;">
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span id="time-label" style="font-size:.65rem;font-weight:700;color:var(--danger);background:#fff;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.1);"></span>
+        <div style="flex:1;height:2px;background:var(--danger);border-radius:2px;box-shadow:0 0 6px rgba(239,68,68,0.4);"></div>
+      </div>
+    </div>
   </div>
 
-  {% if current_user.role == 'teacher' %}
+  {% if current_user.role in ('teacher', 'hod', 'principal') %}
   <a href="/schedule/manage" class="btn btn-primary mt-3">Manage Schedule</a>
   {% endif %}
 
 </div>
 
 <script>
-fetch('/schedule/api/today')
-  .then(r => r.json())
-  .then(classes => {
-    if (classes.length > 0) {
-      document.getElementById('today-widget').style.display = 'block';
-      let html = '';
-      classes.forEach(c => {
-        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light);">';
-        html += '<div style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>';
-        html += '<div style="flex:1;"><div style="font-weight:600;font-size:.88rem;">' + c.class_name + '</div>';
-        html += '<div style="font-size:.75rem;color:var(--text-tertiary);">' + c.start_time + ' – ' + c.end_time + (c.room ? ' · ' + c.room : '') + '</div></div>';
-        html += '</div>';
-      });
-      document.getElementById('today-list').innerHTML = html;
+(function() {
+  // Today's classes widget
+  fetch('/schedule/api/today')
+    .then(r => r.json())
+    .then(classes => {
+      if (classes.length > 0) {
+        document.getElementById('today-widget').style.display = 'block';
+        let html = '';
+        classes.forEach(c => {
+          html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light);">';
+          html += '<div style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>';
+          html += '<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.85rem;">' + c.class_name + '</div>';
+          html += '<div style="font-size:.72rem;color:var(--text-tertiary);">' + c.start_time + ' \u2013 ' + c.end_time + (c.room ? ' \u00b7 ' + c.room : '') + '</div></div>';
+          html += '<div style="font-size:.7rem;color:var(--text-3);white-space:nowrap;">' + (c.teacher_name || '') + '</div>';
+          html += '</div>';
+        });
+        document.getElementById('today-list').innerHTML = html;
+      }
+    });
+
+  // Weekend toggle
+  window.toggleWeekend = function() {
+    const show = document.getElementById('toggle-weekend').checked;
+    document.querySelectorAll('.weekend-day').forEach(el => {
+      el.style.display = show ? '' : 'none';
+    });
+  };
+
+  // Current time indicator
+  function updateTimeIndicator() {
+    const now = new Date();
+    const day = now.getDay();
+    const dayMap = [6, 0, 1, 2, 3, 4, 5];
+    if (day === 0 || day === 6) {
+      document.getElementById('time-indicator').style.display = 'none';
+      return;
     }
-  });
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    if (hour < 8 || hour >= 20) {
+      document.getElementById('time-indicator').style.display = 'none';
+      return;
+    }
+    const rows = document.querySelectorAll('.hour-row');
+    let targetRow = null;
+    for (const row of rows) {
+      if (parseInt(row.dataset.hour) === hour) {
+        targetRow = row;
+        break;
+      }
+    }
+    if (!targetRow) {
+      document.getElementById('time-indicator').style.display = 'none';
+      return;
+    }
+    const pct = minute / 60;
+    const rowHeight = targetRow.offsetHeight;
+    const top = targetRow.offsetTop + rowHeight * pct;
+    const indicator = document.getElementById('time-indicator');
+    indicator.style.display = 'block';
+    indicator.style.top = top + 'px';
+    document.getElementById('time-label').textContent =
+      String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+  }
+  updateTimeIndicator();
+  setInterval(updateTimeIndicator, 30000);
+})();
 </script>
+
+<style>
+.schedule-slot {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+  box-sizing: border-box;
+}
+.schedule-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+  z-index: 2;
+}
+.day-header.today {
+  background: var(--brand-light);
+}
+#timetable-grid td {
+  transition: background 0.2s;
+}
+@media (max-width: 640px) {
+  .schedule-slot { font-size: .65rem !important; padding: 2px 4px !important; border-radius: 4px !important; }
+  .schedule-slot div { font-size: .55rem !important; }
+}
+</style>
 {% endblock %}
