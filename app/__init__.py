@@ -1,10 +1,12 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_apscheduler import APScheduler
 import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+scheduler = APScheduler()
 
 def create_app():
     app = Flask(__name__)
@@ -57,6 +59,16 @@ def create_app():
     def index():
         return redirect(url_for('auth.login'))
 
+    # Initialize APScheduler
+    scheduler.init_app(app)
+    scheduler.start()
+
+    @scheduler.task('cron', id='weekly_parent_report', day_of_week='sat', hour=8, minute=0, misfire_grace_time=3600)
+    def weekly_parent_report_job():
+        with app.app_context():
+            from .report import generate_and_send_weekly_reports
+            generate_and_send_weekly_reports()
+
     with app.app_context():
         from .models import ChatMessage, Department, MarksRecord, ApiConfig
         db.create_all()
@@ -93,6 +105,13 @@ def create_app():
         _ensure_column('user', 'email_notifications', 'BOOLEAN', 'TRUE')
         _ensure_column('user', 'department_id', 'INTEGER')
         _ensure_column('student', 'parent_email', 'VARCHAR(100)')
+        _ensure_column('homework', 'created_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP')
+        _ensure_column('homework', 'due_date', 'DATE')
+        _ensure_column('homework', 'summary', 'TEXT')
+        _ensure_column('marks_record', 'created_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP')
+        _ensure_column('marks_record', 'sent', 'BOOLEAN', 'FALSE')
+        _ensure_column('marks_record', 'exam_type', 'VARCHAR(50)', "'exam'")
+        _ensure_column('student', 'parent_phone', 'VARCHAR(20)')
 
         # Seed departments if empty
         if Department.query.count() == 0:

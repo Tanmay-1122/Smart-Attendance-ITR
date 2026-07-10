@@ -182,3 +182,67 @@ def send_leave_decision_email(to, name, status, class_name, start_date, end_date
     </div>
     """
     return send_email(to, f'Leave Request {label}', html)
+
+
+def send_weekly_parent_report(to, student_name, report):
+    """Send weekly consolidated report to parent."""
+    att = report['attendance']
+    color = '#10B981' if att['percentage'] >= 75 else '#F59E0B' if att['percentage'] >= 40 else '#EF4444'
+
+    att_rows = ''
+    for r in att['records']:
+        c = '#10B981' if r['status'] == 'PRESENT' else '#F59E0B' if r['status'] == 'REVIEW' else '#EF4444'
+        att_rows += f"""<tr><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;font-size:0.85rem;">{r['class_name']}</td><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;font-size:0.85rem;">{r['date']}</td><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;"><span style="color:{c};font-weight:700;font-size:0.8rem;">{r['status']}</span></td></tr>"""
+
+    marks_html = ''
+    if report['marks']:
+        m_rows = ''
+        for m in report['marks']:
+            pct = f"{m['percentage']:.1f}%" if m['percentage'] else 'N/A'
+            mc = '#10B981' if (m['percentage'] or 0) >= 75 else '#F59E0B' if (m['percentage'] or 0) >= 40 else '#EF4444'
+            m_rows += f"""<tr><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;font-size:0.85rem;">{m['subject']}</td><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;font-size:0.85rem;">{m['exam_type']}</td><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;font-size:0.85rem;">{m['marks_obtained']}/{m['total_marks']}</td><td style="padding:6px 10px;border-bottom:1px solid #F3F4F6;"><span style="color:{mc};font-weight:700;font-size:0.85rem;">{pct}</span></td></tr>"""
+        marks_html = f"""<div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:16px;"><h3 style="margin:0 0 12px;font-size:0.95rem;color:#1E1B4B;">📝 Tests & Marks</h3><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F9FAFB;"><th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;">Subject</th><th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;">Type</th><th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;">Marks</th><th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;">%</th></tr></thead><tbody>{m_rows}</tbody></table></div>"""
+
+    remarks_html = ''
+    if report['remarks']:
+        r_items = ''.join(f'<div style="background:#FEF3C7;border-radius:8px;padding:10px;margin-bottom:8px;"><span style="font-size:0.85rem;color:#92400E;">💬 <strong>{r["teacher_name"]}:</strong> {r["remark"]}</span></div>' for r in report['remarks'])
+        remarks_html = f"""<div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:16px;"><h3 style="margin:0 0 12px;font-size:0.95rem;color:#1E1B4B;">💬 Teacher Remarks</h3>{r_items}</div>"""
+
+    low_att_warning = ''
+    if att['percentage'] < 75 and att['total'] > 0:
+        low_att_warning = "<p style='color:#EF4444;font-size:0.88rem;font-weight:600;margin-top:12px;'>⚠ Attendance is below 75%. Please ensure regular attendance.</p>"
+
+    html = f"""
+    <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:520px;margin:0 auto;padding:32px;">
+      <div style="background:linear-gradient(135deg,#6366F1,#7C3AED);border-radius:16px;padding:24px;text-align:center;color:#fff;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:1.2rem;font-weight:800;">Weekly Report</h1>
+        <p style="margin:8px 0 0;opacity:0.8;font-size:0.85rem;">{report['week_start']} — {report['week_end']}</p>
+      </div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <p style="color:#374151;font-size:0.95rem;margin:0 0 4px;">Hi <strong>{student_name}'s Parent</strong>,</p>
+        <p style="color:#6B7280;font-size:0.85rem;margin:0 0 16px;">Here is {student_name}'s performance summary for this week.</p>
+
+        <div style="background:#F9FAFB;border-radius:8px;padding:16px;text-align:center;margin-bottom:16px;">
+          <div style="font-size:2rem;font-weight:800;color:{color};">{att['percentage']}%</div>
+          <div style="font-size:0.8rem;color:#6B7280;margin-top:2px;">Weekly Attendance</div>
+          <div style="font-size:0.75rem;color:#9CA3AF;margin-top:4px;">{att['present']} Present / {att['absent']} Absent / {att['review']} Review</div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+          <thead>
+            <tr style="background:#F9FAFB;">
+              <th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;text-transform:uppercase;">Class</th>
+              <th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;text-transform:uppercase;">Date</th>
+              <th style="padding:6px 10px;text-align:left;font-size:0.75rem;color:#6B7280;text-transform:uppercase;">Status</th>
+            </tr>
+          </thead>
+          <tbody>{att_rows}</tbody>
+        </table>
+        {low_att_warning}
+      </div>
+      {marks_html}
+      {remarks_html}
+      <p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:16px;">SmartAttend — AI-powered attendance management</p>
+    </div>
+    """
+    return send_email(to, f"Weekly Report — {student_name} — {att['percentage']}% Attendance", html)

@@ -52,6 +52,11 @@ class Config:
     # Password reset
     RESET_TOKEN_EXPIRY = 3600  # seconds
 
+    # Twilio (WhatsApp)
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+    TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
+
     # VAPID (Web Push)
     VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
     VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')

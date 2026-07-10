@@ -37,6 +37,7 @@ class Student(db.Model):
     roll_number    = db.Column(db.String(20))
     face_embedding = db.Column(db.Text)   # stored as JSON string of 512 numbers
     parent_email   = db.Column(db.String(100), nullable=True)
+    parent_phone   = db.Column(db.String(20), nullable=True)
 
     # relationship to User
     user = db.relationship('User', backref=db.backref('student', uselist=False))
@@ -199,6 +200,32 @@ class MarksRecord(db.Model):
     created_at      = db.Column(db.DateTime, default=datetime.datetime.now)
 
     student = db.relationship('Student', backref='marks_records')
+
+
+class WeeklyRemark(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    student_id   = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    teacher_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    week_start   = db.Column(db.Date, nullable=False)
+    remark       = db.Column(db.Text, nullable=False)
+    created_at   = db.Column(db.DateTime, default=datetime.datetime.now)
+    updated_at   = db.Column(db.DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+
+    student = db.relationship('Student', backref='weekly_remarks')
+    teacher = db.relationship('User', backref='given_remarks')
+
+
+class WeeklyReportLog(db.Model):
+    id             = db.Column(db.Integer, primary_key=True)
+    student_id     = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    week_start     = db.Column(db.Date, nullable=False)
+    sent_at        = db.Column(db.DateTime, default=datetime.datetime.now)
+    email_sent     = db.Column(db.Boolean, default=False)
+    whatsapp_sent  = db.Column(db.Boolean, default=False)
+    error_log      = db.Column(db.Text, nullable=True)
+
+    student = db.relationship('Student', backref='report_logs')
+
 
 @login_manager.user_loader
 def load_user(user_id):

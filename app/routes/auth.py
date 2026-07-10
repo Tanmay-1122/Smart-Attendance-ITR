@@ -73,6 +73,9 @@ def register():
 
         department_id = int(dept_id) if dept_id and dept_id.isdigit() else None
 
+        parent_email = request.form.get('parent_email', '').strip()
+        parent_phone = request.form.get('parent_phone', '').strip()
+
         new_user = User(
             name     = name,
             email    = email,
@@ -81,6 +84,14 @@ def register():
             department_id = department_id
         )
         db.session.add(new_user)
+        db.session.flush()
+
+        student = Student(
+            user_id=new_user.id,
+            parent_email=parent_email if parent_email else None,
+            parent_phone=parent_phone if parent_phone else None,
+        )
+        db.session.add(student)
         db.session.commit()
         flash('Account created! Please login. Note: Only admins can grant teacher/HOD/Principal access.')
         return redirect(url_for('auth.login'))
@@ -126,12 +137,14 @@ def profile():
         # Email notifications toggle
         current_user.email_notifications = request.form.get('email_notifications') == 'on'
 
-        # Parent email (students only)
+        # Parent contact (students only)
         if current_user.role == 'student':
             parent_email = request.form.get('parent_email', '').strip()
+            parent_phone = request.form.get('parent_phone', '').strip()
             student = Student.query.filter_by(user_id=current_user.id).first()
             if student:
                 student.parent_email = parent_email if parent_email else None
+                student.parent_phone = parent_phone if parent_phone else None
 
         db.session.commit()
         flash('Profile updated!')

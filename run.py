@@ -1,6 +1,8 @@
 import ssl
-from app import create_app
+import atexit
+from app import create_app, scheduler
 app = create_app()
+atexit.register(lambda: scheduler.shutdown(wait=False))
 if __name__=='__main__':
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain('cert.pem', 'key.pem')

@@ -106,7 +106,7 @@
     </div>
     {% endif %}
 
-    <!-- Parent Email (students only) -->
+    <!-- Parent Contact (students only) -->
     {% if current_user.role == 'student' %}
     <div class="card mb-3">
       <div class="card-body">
@@ -115,7 +115,18 @@
           <input type="email" name="parent_email" class="input"
                  value="{{ current_user.student.parent_email if current_user.student and current_user.student.parent_email else '' }}"
                  placeholder="parent@example.com">
-          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Parents receive attendance summaries and homework alerts.</div>
+          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Parents receive weekly report via email.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="field" style="margin-bottom:0;">
+          <label class="label">Parent phone (optional)</label>
+          <input type="tel" name="parent_phone" class="input"
+                 value="{{ current_user.student.parent_phone if current_user.student and current_user.student.parent_phone else '' }}"
+                 placeholder="9876543210">
+          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Parents receive weekly report via WhatsApp.</div>
         </div>
       </div>
     </div>

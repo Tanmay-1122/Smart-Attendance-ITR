@@ -6,7 +6,7 @@ import json
 from urllib.parse import urlencode
 from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response, current_app, jsonify
 from flask_login import login_required, current_user
-from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass, MarksRecord
+from ..models import AttendanceRecord, Student, Homework, TeacherClass, StudentClass, MarksRecord, WeeklyRemark
 from .. import db
 from ..telegram.bot import send_homework, get_file_download_url
 from ..ai_summary import summarize_homework, extract_text_from_file
@@ -1047,4 +1047,114 @@ def marks_send():
     db.session.commit()
 
     flash(f'Saved {saved_count} records and sent notifications to {sent_count} students!')
-    return redirect(url_for('teacher.marks'))
+    return redirect(url_for('teacher.marks'))
+
+
+# ---------- Weekly Remarks ----------
+
+@teacher_bp.route('/remarks')
+@login_required
+def remarks():
+    classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.name).all()
+    now = datetime.date.today()
+    week_start = now - datetime.timedelta(days=now.weekday())
+    week_end = week_start + datetime.timedelta(days=4)
+    return render_template('teacher/remarks.html', classes=classes, week_start=week_start, week_end=week_end)
+
+
+@teacher_bp.route('/remarks/students')
+@login_required
+def remarks_students():
+    class_name = request.args.get('class_name', '').strip()
+    week_start_str = request.args.get('week_start', '')
+
+    week_start = datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday())
+    if week_start_str:
+        try:
+            week_start = datetime.date.fromisoformat(week_start_str)
+        except ValueError:
+            pass
+
+    tc = TeacherClass.query.filter_by(teacher_id=current_user.id, name=class_name).first()
+    if not tc:
+        return jsonify({'error': 'Class not found'}), 404
+
+    enrollments = StudentClass.query.filter_by(class_id=tc.id).all()
+    students_data = []
+    for enr in enrollments:
+        student = enr.student
+        if not student or not student.user:
+            continue
+
+        existing_remark = WeeklyRemark.query.filter_by(
+            student_id=student.id,
+            week_start=week_start,
+        ).first()
+
+        att = AttendanceRecord.query.filter(
+            AttendanceRecord.student_id == student.id,
+            AttendanceRecord.date >= week_start,
+            AttendanceRecord.date <= week_start + datetime.timedelta(days=4),
+        ).all()
+        present = sum(1 for r in att if r.status == 'PRESENT')
+        total = len(att)
+        pct = round(present / total * 100) if total else 0
+
+        students_data.append({
+            'student_id': student.id,
+            'name': student.user.name,
+            'roll_number': student.roll_number,
+            'attendance_pct': pct,
+            'remark': existing_remark.remark if existing_remark else '',
+        })
+
+    return jsonify({'students': students_data, 'week_start': week_start.isoformat()})
+
+
+@teacher_bp.route('/remarks/save', methods=['POST'])
+@login_required
+def remarks_save():
+    data = request.get_json()
+    if not data or 'remarks' not in data:
+        return jsonify({'error': 'No remarks data'}), 400
+
+    week_start = datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday())
+    week_start_str = data.get('week_start', '')
+    if week_start_str:
+        try:
+            week_start = datetime.date.fromisoformat(week_start_str)
+        except ValueError:
+            pass
+
+    saved = 0
+    for item in data['remarks']:
+        student_id = item.get('student_id')
+        remark_text = item.get('remark', '').strip()
+        if not student_id or not remark_text:
+            continue
+
+        if not StudentClass.query.join(TeacherClass).filter(
+            StudentClass.student_id == student_id,
+            TeacherClass.teacher_id == current_user.id
+        ).first():
+            continue
+
+        existing = WeeklyRemark.query.filter_by(
+            student_id=student_id,
+            week_start=week_start,
+        ).first()
+
+        if existing:
+            existing.remark = remark_text
+        else:
+            wr = WeeklyRemark(
+                student_id=student_id,
+                teacher_id=current_user.id,
+                week_start=week_start,
+                remark=remark_text,
+            )
+            db.session.add(wr)
+        saved += 1
+
+    db.session.commit()
+    return jsonify({'success': True, 'saved': saved})
