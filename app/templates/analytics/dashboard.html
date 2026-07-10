@@ -58,20 +58,22 @@
     </div>
   </div>
 
+  <!-- Class Breakdown (student view shows per-class stats, teacher view shows per-student) -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="section-label" style="margin-bottom:12px;">
+        {% if view == 'student' %}Per-Class Breakdown{% else %}Student Breakdown{% endif %}
+      </div>
+      <div id="student-breakdown"></div>
+    </div>
+  </div>
+
   {% if view == 'class' %}
   <!-- At-Risk Students (teacher view only) -->
   <div class="card mb-3">
     <div class="card-body">
       <div class="section-label" style="margin-bottom:12px;">At-Risk Students (Below 75%)</div>
       <div id="at-risk-list"></div>
-    </div>
-  </div>
-
-  <!-- Class Breakdown -->
-  <div class="card mb-3">
-    <div class="card-body">
-      <div class="section-label" style="margin-bottom:12px;">Student Breakdown</div>
-      <div id="student-breakdown"></div>
     </div>
   </div>
   {% endif %}
@@ -82,8 +84,8 @@
 <script>
 (function() {
   const view = '{{ view }}';
-  const studentId = {{ student.id if view == 'student' else 'null' }};
-  const classId = {{ tc.id if view == 'class' else 'null' }};
+  const studentId = {{ student.id if student else 'null' }};
+  const classId = {{ tc.id if tc else 'null' }};
   const apiUrl = view === 'student'
     ? '/analytics/api/student/' + studentId + '/data'
     : '/analytics/api/class/' + classId + '/data';
