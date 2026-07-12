@@ -232,7 +232,7 @@ def homework():
         hw.download_url = get_file_download_url(hw.file_id) if hw.file_id else None
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = urlencode(args_no_page.items(multi=True))
+    url_without_page = urlencode(list(args_no_page.items(multi=True)))
     return render_template('student/homework.html', homework_list=all_hw, pagination=pagination, url_without_page=url_without_page)
 
 
@@ -311,5 +311,5 @@ def marks():
     records = pagination.items
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = urlencode(args_no_page.items(multi=True))
+    url_without_page = urlencode(list(args_no_page.items(multi=True)))
     return render_template('student/marks.html', records=records, pagination=pagination, url_without_page=url_without_page)

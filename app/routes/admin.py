@@ -107,7 +107,7 @@ def users():
     departments = Department.query.order_by(Department.name).all()
     args_no_page = request.args.copy()
     args_no_page.pop('page', None)
-    url_without_page = urlencode(args_no_page.items(multi=True))
+    url_without_page = urlencode(list(args_no_page.items(multi=True)))
     return render_template('admin/users.html', users=users, role_filter=role_filter, search=search, departments=departments, pagination=pagination, url_without_page=url_without_page)
 
 
