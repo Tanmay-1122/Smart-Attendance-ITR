@@ -38,7 +38,7 @@
               <span style="color:var(--text-3);">—</span>
               {% endif %}
             </td>
-            <td style="font-size:.82rem;color:var(--text-2);">{{ r.created_at.strftime('%d %b %Y') }}</td>
+            <td style="font-size:.82rem;color:var(--text-2);">{{ r.created_at.strftime('%d %b %Y') if r.created_at else '' }}</td>
           </tr>
           {% endfor %}
         </tbody>

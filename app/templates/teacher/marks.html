@@ -91,7 +91,7 @@
             <td style="font-weight:600;">{{ ss.class_name }}</td>
             <td>{{ ss.subject }}</td>
             <td><span class="badge badge-present">{{ ss.exam_type }}</span></td>
-            <td style="color:var(--text-2);font-size:.85rem;">{{ ss.created_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+            <td style="color:var(--text-2);font-size:.85rem;">{{ ss.created_at.strftime('%d %b %Y, %I:%M %p') if ss.created_at else 'Unknown date' }}</td>
           </tr>
           {% endfor %}
         </tbody>

@@ -13,7 +13,12 @@ analytics_bp = Blueprint('analytics', __name__, url_prefix='/analytics')
 @login_required
 def index():
     if current_user.role == 'teacher':
-        return redirect(url_for('analytics.student_overview'))
+        first_class = TeacherClass.query.filter_by(teacher_id=current_user.id).first()
+        if first_class:
+            return redirect(url_for('analytics.class_overview', class_id=first_class.id))
+        else:
+            flash('Please create a class first to view analytics.')
+            return redirect(url_for('teacher.dashboard'))
     return redirect(url_for('analytics.student_overview'))
 
 
@@ -31,6 +36,7 @@ def student_overview():
     return render_template('analytics/dashboard.html',
                            view='student',
                            student=student,
+                           tc=None,
                            enrolled_classes=enrolled_class_names)
 
 
@@ -48,6 +54,7 @@ def class_overview(class_id):
 
     return render_template('analytics/dashboard.html',
                            view='class',
+                           student=None,
                            tc=tc)
 
 
@@ -83,7 +90,7 @@ def student_data(student_id):
         if cn not in class_stats:
             class_stats[cn] = {'total': 0, 'present': 0, 'absent': 0, 'review': 0}
         class_stats[cn]['total'] += 1
-        if r.status in class_stats[cn]:
+        if r.status.lower() in class_stats[cn]:
             class_stats[cn][r.status.lower()] += 1
 
     # Weekly pattern (Mon-Sat)
@@ -136,7 +143,7 @@ def class_data(class_id):
         if sid not in student_stats:
             student_stats[sid] = {'total': 0, 'present': 0, 'absent': 0, 'review': 0}
         student_stats[sid]['total'] += 1
-        if r.status in student_stats[sid]:
+        if r.status.lower() in student_stats[sid]:
             student_stats[sid][r.status.lower()] += 1
 
     student_list = []

@@ -14,7 +14,7 @@
           <div style="flex:1;">
             <div style="font-weight:700;font-size:.95rem;color:var(--text);">{{ hw.title }}</div>
             <div style="font-size:.78rem;color:var(--text-3);margin-top:3px;">
-              {{ hw.class_name }} &middot; {{ hw.teacher_name }} &middot; {{ hw.created_at.strftime('%d %b') }}
+              {{ hw.class_name }} &middot; {{ hw.teacher_name }} &middot; {{ hw.created_at.strftime('%d %b') if hw.created_at else '' }}
             </div>
           </div>
           {% if hw.file_name %}
@@ -31,7 +31,7 @@
         {% endif %}
         <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
           {% if hw.due_date %}
-          <span style="font-size:.7rem;color:var(--warning);font-weight:600;">Due {{ hw.due_date.strftime('%d %b') }}</span>
+          <span style="font-size:.7rem;color:var(--warning);font-weight:600;">Due {{ hw.due_date.strftime('%d %b') if hw.due_date else '' }}</span>
           {% endif %}
           {% if hw.summary %}
           <span class="badge badge-review" style="font-size:.62rem;">AI Summary</span>
