@@ -6,6 +6,17 @@ _env_path = os.path.join(os.path.dirname(__file__), '.env', '.env')
 if os.path.exists(_env_path):
     load_dotenv(_env_path)
 
+# Load .env/config.py for actual API keys (defined as Python variables)
+# These override env vars so real keys take precedence over .env placeholders
+_config_py = os.path.join(os.path.dirname(__file__), '.env', 'config.py')
+if os.path.exists(_config_py):
+    with open(_config_py) as f:
+        exec(f.read(), globals())
+    # Set the loaded values as env vars so they override placeholder .env values
+    for _key in ('TELEGRAM_BOT_TOKEN', 'TELEGRAM_GROUP_ID', 'GOOGLE_AI_KEY'):
+        if _key in globals() and globals()[_key]:
+            os.environ[_key] = globals()[_key]
+
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'smart-attendance-secret-key-998877')

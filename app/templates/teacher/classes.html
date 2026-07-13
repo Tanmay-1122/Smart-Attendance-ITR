@@ -24,23 +24,23 @@
   </div>
 
   <!-- Class List -->
-  <div class="section-label" style="margin-bottom:8px;">Your classes ({{ classes|length }})</div>
+  <div class="section-label section-label-mb">Your classes ({{ classes|length }})</div>
   {% if classes %}
   <div class="card">
     {% for tc in classes %}
     <a href="/teacher/classes/{{ tc.id }}" style="display:block;padding:15px 18px;text-decoration:none;color:inherit;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}transition:background .15s;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:.95rem;color:var(--text);margin-bottom:2px;">{{ tc.name }}</div>
+         <div class="flex-1 min-w-0">
+           <div style="font-weight:700;font-size:.95rem;color:var(--text);margin-bottom:2px;">{{ tc.name }}</div>
           {% if tc.description %}
           <div style="font-size:.8rem;color:var(--text-2);margin-bottom:6px;">{{ tc.description }}</div>
           {% endif %}
-          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-            <span style="font-size:.72rem;color:var(--text-3);">{{ tc.students.count() }} student{{ 's' if tc.students.count() != 1 else '' }} enrolled</span>
-            <span style="font-size:.72rem;color:var(--text-3);">Created {{ tc.created_at.strftime('%d %b %Y') if tc.created_at else '' }}</span>
+          <div class="flex-row flex-gap-md flex-wrap">
+            <span class="list-item-sub">{{ tc.students.count() }} student{{ 's' if tc.students.count() != 1 else '' }} enrolled</span>
+            <span class="list-item-sub">Created {{ tc.created_at.strftime('%d %b %Y') if tc.created_at else '' }}</span>
           </div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+        <div class="flex-row flex-gap-xs flex-shrink-0">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
       </div>
@@ -54,7 +54,7 @@
   </div>
   {% endif %}
 
-  <div style="display:flex;gap:10px;margin-top:14px;">
+  <div class="flex-row" style="gap:10px;margin-top:14px;">
     <a href="/teacher/student-panel" class="btn btn-primary">Student Panel</a>
     <a href="/teacher/dashboard" class="btn btn-ghost">Back to dashboard</a>
   </div>

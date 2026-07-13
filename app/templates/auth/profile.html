@@ -2,11 +2,11 @@
 {% block content %}
 <div class="page" style="max-width:480px;">
 
-  <div class="page-title" style="margin-bottom:20px;">Profile Settings</div>
+  <div class="page-title">Profile Settings</div>
 
   <!-- Profile Photo -->
   <div class="card mb-3">
-    <div class="card-body" style="display:flex;align-items:center;gap:16px;">
+    <div class="card-body profile-card-header">
       <div id="avatar-preview" class="profile-avatar-lg">
         {% if current_user.profile_photo %}
         <img src="/static/uploads/{{ current_user.profile_photo }}" alt="Profile">
@@ -15,17 +15,17 @@
         {% endif %}
       </div>
       <div>
-        <div style="font-weight:700;font-size:1rem;">{{ current_user.name }}</div>
-        <div style="font-size:.8rem;color:var(--text-3);margin-top:2px;">{{ current_user.email }}</div>
-        <div style="font-size:.72rem;color:var(--brand);font-weight:600;margin-top:4px;text-transform:uppercase;">{{ current_user.role }}</div>
+        <div class="profile-card-name">{{ current_user.name }}</div>
+        <div class="profile-card-email">{{ current_user.email }}</div>
+        <div class="profile-card-role">{{ current_user.role }}</div>
       </div>
     </div>
   </div>
 
-  <!-- Face Recognition Enrollment (For Students Only) -->
+  <!-- Face Recognition Enrollment (Students Only) -->
   {% if current_user.role == 'student' %}
   <div class="card mb-3">
-    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+    <div class="card-body profile-row-between">
       <div>
         <div class="label" style="margin-bottom:6px;">Face Recognition</div>
         <div>
@@ -84,7 +84,7 @@
       <div class="card-body">
         <div class="field" style="margin-bottom:0;">
           <label class="label">Email address</label>
-          <input type="email" class="input" value="{{ current_user.email }}" disabled style="opacity:.6;cursor:not-allowed;">
+          <input type="email" class="input" value="{{ current_user.email }}" disabled class="input-disabled">
         </div>
       </div>
     </div>
@@ -115,7 +115,7 @@
           <input type="text" name="subjects" class="input"
                  value="{{ current_user.subjects or '' }}"
                  placeholder="e.g. Mathematics, Physics, Computer Science">
-          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Separate multiple subjects with commas.</div>
+          <div class="field-hint">Separate multiple subjects with commas.</div>
         </div>
       </div>
     </div>
@@ -130,7 +130,7 @@
           <input type="email" name="parent_email" class="input"
                  value="{{ current_user.student.parent_email if current_user.student and current_user.student.parent_email else '' }}"
                  placeholder="parent@example.com">
-          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Parents receive weekly report via email.</div>
+          <div class="field-hint">Parents receive weekly report via email.</div>
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@
           <input type="tel" name="parent_phone" class="input"
                  value="{{ current_user.student.parent_phone if current_user.student and current_user.student.parent_phone else '' }}"
                  placeholder="9876543210">
-          <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">Parents receive weekly report via WhatsApp.</div>
+          <div class="field-hint">Parents receive weekly report via WhatsApp.</div>
         </div>
       </div>
     </div>
@@ -149,17 +149,17 @@
 
     <!-- Email Notifications -->
     <div class="card mb-3">
-      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="card-body profile-row-between">
         <div>
           <div class="label" style="margin-bottom:2px;">Email notifications</div>
-          <div style="font-size:0.78rem;color:var(--text-tertiary);">Receive attendance summaries and homework alerts via email</div>
+          <div class="field-hint">Receive attendance summaries and homework alerts via email</div>
         </div>
-        <label style="position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;">
+        <label class="toggle-switch">
           <input type="checkbox" name="email_notifications" value="on"
                  {% if current_user.email_notifications %}checked{% endif %}
-                 style="opacity:0;width:0;height:0;" onchange="this.closest('form').submit()">
-          <span style="position:absolute;cursor:pointer;inset:0;background:{% if current_user.email_notifications %}var(--brand){% else %}var(--border){% endif %};border-radius:13px;transition:.3s;"></span>
-          <span style="position:absolute;content:'';height:20px;width:20px;left:{% if current_user.email_notifications %}24px{% else %}3px{% endif %};bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                 onchange="this.closest('form').submit()">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
         </label>
       </div>
     </div>
@@ -171,10 +171,10 @@
 
   {% if vapid_public_key %}
   <div class="card mt-3">
-    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="card-body profile-row-between">
       <div>
         <div class="label" style="margin-bottom:2px;">Push Notifications</div>
-        <div style="font-size:0.78rem;color:var(--text-tertiary);">Manage browser push notification settings</div>
+        <div class="field-hint">Manage browser push notification settings</div>
       </div>
       <a href="/notifications/settings" class="btn btn-ghost btn-sm" style="margin:0;">Configure</a>
     </div>

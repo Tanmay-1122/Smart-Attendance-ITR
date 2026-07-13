@@ -6,10 +6,12 @@ from ..models import ChatMessage, Homework
 
 
 def _token():
-    return current_app.config['TELEGRAM_BOT_TOKEN']
+    from ..api_config import get_api_config
+    return get_api_config('TELEGRAM_BOT_TOKEN') or ''
 
 def _group():
-    return current_app.config['TELEGRAM_GROUP_ID']
+    from ..api_config import get_api_config
+    return get_api_config('TELEGRAM_GROUP_ID') or ''
 
 def _base():
     return f"https://api.telegram.org/bot{_token()}"

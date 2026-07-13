@@ -2,20 +2,22 @@
 {% block content %}
 <div class="page">
 
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-    <a href="/hod/dashboard" style="color:var(--text-secondary);font-size:1.2rem;">&larr;</a>
+  <div class="page-header-row">
+    <a href="/hod/dashboard" class="page-back">&larr;</a>
     <div class="page-title" style="margin:0;">Teachers &mdash; {{ dept.name }}</div>
   </div>
   <div class="page-sub">Manage teachers and their subjects in your department</div>
 
-  <div class="card mb-3" style="padding:14px 18px;">
-    <form method="GET" action="/hod/teachers" style="display:flex;gap:8px;align-items:center;">
-      <input type="text" name="search" class="input" placeholder="Search by name or email..." value="{{ search }}" style="flex:1;min-width:160px;">
-      <button type="submit" class="btn btn-primary" style="font-size:.8rem;width:auto;padding:9px 16px;">Search</button>
-      {% if search %}
-      <a href="/hod/teachers" class="btn btn-ghost" style="font-size:.8rem;width:auto;padding:9px 16px;">Clear</a>
-      {% endif %}
-    </form>
+  <div class="card mb-3">
+    <div class="card-body" style="padding:14px 18px;">
+      <form method="GET" action="/hod/teachers" class="search-row">
+        <input type="text" name="search" class="input search-input" placeholder="Search by name or email..." value="{{ search }}">
+        <button type="submit" class="btn btn-primary search-btn">Search</button>
+        {% if search %}
+        <a href="/hod/teachers" class="btn btn-ghost search-btn">Clear</a>
+        {% endif %}
+      </form>
+    </div>
   </div>
 
   {% if teachers %}
@@ -29,7 +31,7 @@
           {% for t in teachers %}
           <tr>
             <td style="font-weight:600;">
-              <div style="display:flex;align-items:center;gap:8px;">
+              <div class="flex-row flex-gap-sm">
                 <div class="bar-avatar" style="width:26px;height:26px;font-size:.6rem;flex-shrink:0;">
                   {% if t.user.profile_photo %}
                   <img src="/static/uploads/{{ t.user.profile_photo }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
@@ -37,13 +39,13 @@
                   {{ t.user.name[0]|upper }}
                   {% endif %}
                 </div>
-                <span class="text-truncate" style="max-width:140px;">{{ t.user.name }}</span>
+                <span class="truncate" style="max-width:140px;">{{ t.user.name }}</span>
               </div>
             </td>
-            <td style="color:var(--text-secondary);font-size:.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.user.email }}</td>
+            <td class="truncate" style="color:var(--text-secondary);font-size:.8rem;max-width:180px;">{{ t.user.email }}</td>
             <td id="subjects-display-{{ t.user.id }}" style="font-size:.8rem;max-width:200px;">
               {% if t.user.subjects %}
-              <div style="display:flex;gap:3px;flex-wrap:wrap;">
+              <div class="flex-row flex-gap-xs flex-wrap">
                 {% for sub in t.user.subjects.split(',') %}
                 <span style="background:var(--brand-light);color:var(--brand);padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:600;">{{ sub.strip() }}</span>
                 {% endfor %}
@@ -72,20 +74,19 @@
 
 </div>
 
-<!-- Subjects Modal -->
-<div id="subjects-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSubjectsModal()">
-  <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+<div id="subjects-modal" class="dialog-overlay" style="display:none;" onclick="if(event.target===this)closeSubjectsModal()">
+  <div class="dialog">
     <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Edit Subjects</div>
     <div id="modal-teacher-name" style="font-size:.82rem;color:var(--text-tertiary);margin-bottom:16px;"></div>
-    <form id="subjects-form" method="POST" action="/hod/teachers/update-subjects" style="display:flex;flex-direction:column;gap:12px;">
+    <form id="subjects-form" method="POST" action="/hod/teachers/update-subjects">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <input type="hidden" name="user_id" id="modal-user-id">
       <div class="field" style="margin:0;">
         <label class="label">Subjects (comma-separated)</label>
         <input type="text" name="subjects" id="modal-subjects-input" class="input" placeholder="e.g. Mathematics, Physics">
-        <div style="font-size:.72rem;color:var(--text-tertiary);margin-top:4px;">Separate multiple subjects with commas.</div>
+        <div class="field-hint">Separate multiple subjects with commas.</div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div class="flex-row flex-gap-sm" style="margin-top:14px;">
         <button type="submit" class="btn btn-primary">Save</button>
         <button type="button" class="btn btn-ghost" onclick="closeSubjectsModal()">Cancel</button>
       </div>
@@ -100,7 +101,6 @@ function openSubjectsModal(userId, userName, subjects) {
   document.getElementById('modal-subjects-input').value = subjects;
   document.getElementById('subjects-modal').style.display = 'flex';
 }
-
 function closeSubjectsModal() {
   document.getElementById('subjects-modal').style.display = 'none';
 }

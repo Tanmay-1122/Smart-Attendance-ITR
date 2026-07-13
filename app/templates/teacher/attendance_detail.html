@@ -2,8 +2,8 @@
 {% block content %}
 <div class="page">
 
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-    <a href="/teacher/attendance" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+  <div class="page-header-row">
+    <a href="/teacher/attendance" class="page-back">&larr;</a>
     <div class="page-title" style="margin:0;">{{ tc.name }}</div>
   </div>
   <div class="page-sub">Attendance records &mdash; {{ total_records }} total record{{ 's' if total_records != 1 else '' }}</div>
@@ -15,7 +15,7 @@
   {% set review_total = all_records|selectattr('status','equalto','REVIEW')|list|length %}
   {% set absent_total = all_records|selectattr('status','equalto','ABSENT')|list|length %}
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+  <div class="flex-row flex-gap-sm flex-wrap" style="margin-bottom:18px;">
     <span class="badge badge-present">{{ present_total }} Present</span>
     <span class="badge badge-review">{{ review_total }} Review</span>
     <span class="badge badge-absent">{{ absent_total }} Absent</span>
@@ -24,11 +24,11 @@
   <!-- Records grouped by date -->
   {% if by_date %}
   {% for date, recs in by_date.items() %}
-  <div style="margin-bottom:16px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+  <div class="mb-3">
+    <div class="flex-row flex-gap-xs" style="margin-bottom:6px;">
       <div style="font-weight:700;font-size:.85rem;color:var(--text);">{{ date.strftime('%A, %d %B %Y') if date else 'Unknown date' }}</div>
       <div style="height:1px;flex:1;background:var(--border);"></div>
-      <span style="font-size:.72rem;color:var(--text-3);">{{ recs|length }} student{{ 's' if recs|length != 1 else '' }}</span>
+      <span class="list-item-sub">{{ recs|length }} student{{ 's' if recs|length != 1 else '' }}</span>
     </div>
     <div class="card">
       <div class="tbl-wrap">
@@ -67,7 +67,7 @@
   </div>
   {% endif %}
 
-  <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+  <div class="flex-row flex-gap-xs flex-wrap" style="margin-top:10px;">
     <a href="/teacher/export?class_name={{ tc.name }}" class="btn btn-primary">Export CSV</a>
     <a href="/teacher/attendance" class="btn btn-ghost">Back to all classes</a>
   </div>

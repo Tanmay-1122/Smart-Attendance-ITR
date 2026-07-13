@@ -1,29 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-
-<h2>My Attendance</h2>
-
-{% if records %}
-<table class="table table-bordered">
-  <thead class="table-dark">
-    <tr>
-      <th>Date</th>
-      <th>Class</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in records %}
-    <tr class="{% if r.status == 'PRESENT' %}table-success{% else %}table-danger{% endif %}">
-      <td>{{ r.date }}</td>
-      <td>{{ r.class_name }}</td>
-      <td>{{ r.status }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-  <p class="text-muted">No attendance records yet.</p>
-{% endif %}
-
+<div class="page">
+  <div class="page-title">Student Dashboard</div>
+  <div class="page-sub">Your attendance overview</div>
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <div class="empty-state-title">Redirecting...</div>
+    <div class="empty-state-desc">Please use the updated student dashboard.</div>
+    <a href="/student/dashboard" class="btn btn-primary btn-sm empty-state-action">Go to Dashboard</a>
+  </div>
+</div>
+<script>window.location.href = '/student/dashboard';</script>
 {% endblock %}

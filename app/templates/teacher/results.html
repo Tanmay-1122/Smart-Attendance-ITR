@@ -8,7 +8,7 @@
   {% set present_c = results | selectattr('status','equalto','PRESENT') | list | length %}
   {% set review_c  = results | selectattr('status','equalto','REVIEW')  | list | length %}
   {% set absent_c  = results | selectattr('status','equalto','ABSENT')  | list | length %}
-  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;">
+  <div class="flex-row flex-gap-sm flex-wrap" style="margin-bottom:18px;">
     <span class="badge badge-present">{{ present_c }} Present</span>
     <span class="badge badge-review">{{ review_c }} Review</span>
     <span class="badge badge-absent">{{ absent_c }} Absent</span>

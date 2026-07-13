@@ -6,7 +6,8 @@ from flask import current_app
 
 def extract_marks_from_image(image_path):
     """Use Google Gemini Vision to extract student marks from a marksheet image."""
-    api_key = current_app.config.get('GOOGLE_AI_KEY')
+    from .api_config import get_api_config
+    api_key = get_api_config('GOOGLE_AI_KEY')
     if not api_key:
         print("[MARKS OCR] No API key configured.")
         return None

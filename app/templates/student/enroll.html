@@ -15,7 +15,7 @@
   </div>
 
   <!-- Step indicator -->
-  <div id="step-indicator" style="display:flex;gap:0;align-items:center;justify-content:center;margin-bottom:16px;padding:0 20px;">
+  <div id="step-indicator" class="flex-center" style="gap:0;margin-bottom:16px;padding:0 20px;">
     <div class="step-dot active" data-step="1">1</div>
     <div class="step-line" id="line-1"></div>
     <div class="step-dot" data-step="2">2</div>
@@ -42,7 +42,7 @@
   </div>
 
   <!-- Thumbnails -->
-  <div id="thumbnails" style="display:none;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;">
+  <div id="thumbnails" class="flex-center flex-gap-sm flex-wrap" style="display:none;margin-bottom:16px;">
     <div class="thumb-slot" id="thumb-1"></div>
     <div class="thumb-slot" id="thumb-2"></div>
     <div class="thumb-slot" id="thumb-3"></div>
@@ -65,7 +65,7 @@
   display:none; position:fixed; inset:0; z-index:999;
   background:#fff; flex-direction:column;
   align-items:center; justify-content:center; padding:32px; text-align:center;">
-  <div style="width:72px;height:72px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+  <div class="flex-center" style="width:72px;height:72px;border-radius:50%;background:#DCFCE7;margin-bottom:20px;">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
   </div>
   <h2 style="font-size:1.4rem;font-weight:800;color:#0F172A;margin-bottom:8px;">Face Enrolled!</h2>

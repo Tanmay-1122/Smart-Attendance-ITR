@@ -2,19 +2,16 @@
 {% block content %}
 <div class="page" style="max-width:480px;">
 
-  <!-- Back button -->
-  <div style="margin-bottom:16px;">
-    <a href="javascript:history.back()" style="display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:600;color:var(--text-secondary);transition:color .15s;">
+  <div class="back-link">
+    <a href="javascript:history.back()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </a>
   </div>
 
-  <!-- Profile Card -->
   <div class="card">
-    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;padding:32px 24px;text-align:center;">
+    <div class="card-body profile-user-view-card">
 
-      <!-- Avatar -->
       <div class="profile-view-avatar">
         {% if profile_user.profile_photo %}
         <img src="/static/uploads/{{ profile_user.profile_photo }}" alt="{{ profile_user.name }}">
@@ -23,30 +20,25 @@
         {% endif %}
       </div>
 
-      <!-- Name -->
-      <div style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:16px;">{{ profile_user.name }}</div>
+      <div class="profile-view-name">{{ profile_user.name }}</div>
 
-      <!-- Role badge -->
       <div style="margin-top:8px;">
-        <span class="badge {% if profile_user.role == 'teacher' %}badge-review{% else %}badge-present{% endif %}" style="font-size:.7rem;padding:4px 12px;">
+        <span class="badge {% if profile_user.role == 'teacher' %}badge-review{% else %}badge-present{% endif %} profile-view-role-badge">
           {{ profile_user.role|capitalize }}
         </span>
       </div>
 
-      <!-- Email -->
-      <div style="font-size:.85rem;color:var(--text-tertiary);margin-top:12px;">{{ profile_user.email }}</div>
+      <div class="profile-view-email">{{ profile_user.email }}</div>
 
-      <!-- Message button (only if logged in and not viewing self) -->
       {% if current_user.is_authenticated and current_user.id != profile_user.id %}
-      <a href="/chat/{{ profile_user.id }}" class="btn btn-primary mt-4" style="max-width:240px;text-decoration:none;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <a href="/chat/{{ profile_user.id }}" class="btn btn-primary mt-4 profile-view-msg-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Message
       </a>
       {% endif %}
 
     </div>
   </div>
-
 </div>
 
 <style>
@@ -60,6 +52,22 @@
 }
 .profile-view-avatar img {
   width: 100%; height: 100%; object-fit: cover;
+}
+.profile-view-name {
+  font-size: 1.3rem; font-weight: 800; color: var(--text); margin-top: 16px;
+}
+.profile-view-email {
+  font-size: .85rem; color: var(--text-tertiary); margin-top: 12px;
+}
+.profile-view-msg-btn {
+  max-width: 240px; text-decoration: none;
+}
+.profile-view-role-badge {
+  font-size: .7rem; padding: 4px 12px;
+}
+.profile-user-view-card {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 24px; text-align: center;
 }
 </style>
 {% endblock %}

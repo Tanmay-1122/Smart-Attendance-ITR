@@ -2,19 +2,66 @@
 {% block content %}
 <div class="page">
 
-  <!-- Classes Section (shared) -->
-  {% if classes %}
-  <div class="section-header">
-    <div class="section-label" style="margin-bottom:0;">Your classes</div>
-    <a href="/teacher/classes" style="font-size:.78rem;font-weight:600;color:var(--brand);">Manage &rarr;</a>
+  <!-- KPI Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">{{ total_classes }}</div>
+      <div class="kpi-label">Classes</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ total_students }}</div>
+      <div class="kpi-label">Students</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ today_present }}</div>
+      <div class="kpi-label">Present Today</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ today_absent }}</div>
+      <div class="kpi-label">Absent Today</div>
+    </div>
   </div>
+
+  <!-- Quick Actions -->
+  <div class="section-header">
+    <div class="section-label">Quick Actions</div>
+  </div>
+  <div class="action-grid">
+    <a href="/teacher/classes" class="action-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      <span class="action-card-label">Manage Classes</span>
+    </a>
+    <a href="/teacher/attendance" class="action-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span class="action-card-label">View Attendance</span>
+    </a>
+    <a href="/teacher/homework" class="action-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span class="action-card-label">Homework</span>
+    </a>
+    <a href="/teacher/marks" class="action-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="action-card-label">Marks</span>
+    </a>
+  </div>
+
+  <!-- Scan Attendance Section -->
+  <div class="section-header">
+    <div class="section-label">Scan Attendance</div>
+    {% if today_classes_scanned > 0 %}
+    <span style="font-size:.78rem;font-weight:600;color:var(--success);">{{ today_classes_scanned }} class{% if today_classes_scanned != 1 %}es{% endif %} scanned today</span>
+    {% endif %}
+  </div>
+
+  <!-- Classes filter chips -->
+  {% if classes %}
   <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;">
     {% for tc in classes %}
     <div class="class-chip" data-name="{{ tc.name }}" onclick="selectClass(this)" style="
       flex-shrink:0;padding:10px 16px;border-radius:10px;
       border:1.5px solid {% if preselected == tc.name %}var(--brand){% else %}var(--border){% endif %};
       background:{% if preselected == tc.name %}var(--brand-light){% else %}var(--surface){% endif %};
-      cursor:pointer;min-width:100px;text-align:center;
+      cursor:pointer;min-width:100px;text-align-center;
       {% if preselected == tc.name %}box-shadow:0 2px 8px rgba(99,102,241,.15);{% endif %}
     ">
       <div style="font-weight:700;font-size:.85rem;color:var(--text);">{{ tc.name }}</div>
@@ -39,7 +86,7 @@
     </button>
   </div>
 
-  <!-- ===== BATCH MODE (existing) ===== -->
+  <!-- ===== BATCH MODE ===== -->
   <div id="batch-mode">
 
     <div id="step-indicator" style="margin-bottom:16px;">
@@ -61,12 +108,7 @@
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas" style="display:none;"></canvas>
         <div class="cam-border"></div>
-        <div id="guide-overlay" style="
-          position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
-          background:rgba(0,0,0,0.55); backdrop-filter:blur(8px);
-          color:#fff; font-size:.75rem; font-weight:600;
-          padding:6px 14px; border-radius:100px; letter-spacing:.03em; white-space:nowrap;
-          pointer-events:none;">
+        <div style="position:absolute; bottom:14px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.55); backdrop-filter:blur(8px); color:#fff; font-size:.75rem; font-weight:600; padding:6px 14px; border-radius:100px; letter-spacing:.03em; white-space:nowrap; pointer-events:none;">
           <span id="guide-text">Frame the class — include all students</span>
         </div>
       </div>
@@ -131,11 +173,7 @@
 
     {% if classes %}
     <div id="cont-status-area" style="text-align:center;padding:20px 0 16px;">
-      <div id="cont-status-badge" style="
-        display:inline-flex;align-items:center;gap:8px;
-        background:var(--surface);border:1.5px solid var(--border);border-radius:100px;
-        padding:8px 20px;font-size:.85rem;font-weight:600;color:var(--text-2);
-      ">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:100px;padding:8px 20px;font-size:.85rem;font-weight:600;color:var(--text-2);">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--text-3);" id="cont-led"></span>
         <span id="cont-status-text">Select a class and press Start</span>
       </div>
@@ -162,7 +200,7 @@
           </div>
         </div>
 
-        <button id="cont-shutter-btn" class="shutter-btn" type="button" title="Capture &amp; Identify" style="
+        <button id="cont-shutter-btn" class="shutter-btn" type="button" title="Capture & Identify" style="
           position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
           width:66px;height:66px;border-radius:50%;border:4px solid rgba(255,255,255,0.85);
           background:rgba(255,255,255,0.2);backdrop-filter:blur(4px);
@@ -215,6 +253,25 @@
 
   </div>
 
+  <!-- Recent Sessions -->
+  {% if recent_sessions %}
+  <div style="margin-top:24px;">
+    <div class="section-header">
+      <div class="section-label">Recent Sessions (7 days)</div>
+      <a href="/teacher/attendance" style="font-size:.78rem;font-weight:600;color:var(--brand);">View all &rarr;</a>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      {% for date, class_name in recent_sessions %}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border-radius:8px;border:1px solid var(--border);font-size:.85rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span style="font-weight:600;">{{ class_name }}</span>
+        <span style="color:var(--text-3);margin-left:auto;">{{ date.strftime('%d %b %Y') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
 <script>
@@ -246,11 +303,11 @@
     }
   }
 
-  // ===== BATCH SCAN (existing) =====
+  // ===== BATCH SCAN =====
   const GUIDES = [
-    'Frame the class \u2014 include all students',
+    'Frame the class — include all students',
     'Move to a different angle from photo 1',
-    'Final shot \u2014 different position again'
+    'Final shot — different position again'
   ];
 
   let step = 1;
@@ -387,7 +444,9 @@
     btnLoading.style.display = 'inline-flex';
   });
 
-  // ===== CLASS SELECTION (shared) =====
+  // ===== CLASS SELECTION =====
+  let selectedClassName = '{{ preselected }}';
+
   function selectClass(el) {
     document.querySelectorAll('.class-chip').forEach(c => {
       c.style.borderColor = 'var(--border)';
@@ -403,7 +462,6 @@
   }
 
   // ===== CONTINUOUS SCAN =====
-  let selectedClassName = '{{ preselected }}';
   let contScanning = false;
   let contTimer = null;
   let contCooldown = false;
@@ -440,7 +498,6 @@
 
     setContStatus('Checking Face API...', '#f59e0b');
 
-    // First check if the Face Recognition API is available
     fetch('/teacher/api/face_api_status')
       .then(r => r.json())
       .then(status => {
@@ -465,14 +522,14 @@
       .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } } })
       .then(stream => {
         contVideo.srcObject = stream;
-        setContStatus('Camera ready \u2014 waiting for face...', 'var(--text-3)');
+        setContStatus('Camera ready — waiting for face...', 'var(--text-3)');
         contTimer = setInterval(captureAndIdentify, 1800);
       })
       .catch(() => {
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
             contVideo.srcObject = stream;
-            setContStatus('Camera ready \u2014 waiting for face...', 'var(--text-3)');
+            setContStatus('Camera ready — waiting for face...', 'var(--text-3)');
             contTimer = setInterval(captureAndIdentify, 1800);
           })
           .catch(e => {
@@ -656,13 +713,11 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dataUrl = contCanvas.toDataURL('image/jpeg', 0.75);
 
-    // Show preview
     const preview = document.getElementById('cont-photo-preview');
     const previewImg = document.getElementById('cont-captured-img');
     previewImg.src = dataUrl;
     preview.style.display = 'block';
 
-    // Animation
     const shutter = document.getElementById('cont-shutter-btn');
     shutter.classList.add('processing');
     setContStatus('Identifying...', '#f59e0b');
@@ -706,20 +761,19 @@
     });
   }
 
-  // Start camera when tab switches to continuous mode (without auto-scan)
   function startContCameraOnly() {
     if (contVideo && contVideo.srcObject) return;
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } } })
       .then(stream => {
         contVideo.srcObject = stream;
-        setContStatus('Camera ready \u2014 tap shutter or video to capture', 'var(--text-3)');
+        setContStatus('Camera ready — tap shutter or video to capture', 'var(--text-3)');
       })
       .catch(() => {
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
             contVideo.srcObject = stream;
-            setContStatus('Camera ready \u2014 tap shutter or video to capture', 'var(--text-3)');
+            setContStatus('Camera ready — tap shutter or video to capture', 'var(--text-3)');
           })
           .catch(e => {
             setContStatus('Camera unavailable', '#ef4444');
@@ -727,7 +781,6 @@
       });
   }
 
-  // Event listeners for continuous controls
   const contStartBtn = document.getElementById('cont-start-btn');
   const contStopBtn  = document.getElementById('cont-stop-btn');
   const contShutterBtn = document.getElementById('cont-shutter-btn');
@@ -736,7 +789,6 @@
   if (contShutterBtn) contShutterBtn.addEventListener('click', captureSinglePhoto);
   if (contVideo) contVideo.addEventListener('click', captureSinglePhoto);
 
-  // Load today's present list when continuous mode is first shown
   if (selectedClassName) loadTodayPresent();
 </script>
 {% endblock %}

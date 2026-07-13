@@ -13,3 +13,4 @@ python-dotenv
 pywebpush
 twilio
 flask-apscheduler
+google-genai

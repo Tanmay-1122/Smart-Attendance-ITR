@@ -25,16 +25,16 @@
             <tr>
               <td style="font-weight:600;white-space:nowrap;vertical-align:middle;">
                 <div>{{ info.description }}</div>
-                <div style="font-size:.7rem;color:var(--text-3);font-weight:400;font-family:monospace;margin-top:2px;">{{ key }}</div>
+                <div class="list-item-sub" style="font-weight:400;font-family:monospace;">{{ key }}</div>
               </td>
               <td style="vertical-align:middle;">
                 {% if info.is_secret %}
-                <div class="secret-field" style="display:flex;align-items:center;gap:6px;">
-                  <input type="password" name="{{ key }}" class="input secret-input" value="{{ info.db_value or '' }}" placeholder="Not set" style="font-family:monospace;font-size:.82rem;width:100%;">
-                  <button type="button" class="btn-ghost toggle-secret" style="padding:4px 8px;font-size:.75rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;white-space:nowrap;background:var(--surface);color:var(--text-2);" onclick="toggleSecret(this)">Show</button>
+                <div class="secret-field flex-row flex-gap-xs">
+                  <input type="password" name="{{ key }}" class="input secret-input" value="{{ info.db_value or '' }}" placeholder="{% if info.env_value %}Using env var (hidden){% else %}Not set{% endif %}" style="font-family:monospace;font-size:.82rem;width:100%;">
+                  <button type="button" class="toggle-secret" style="padding:4px 8px;font-size:.75rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;white-space:nowrap;background:var(--surface);color:var(--text-2);" onclick="toggleSecret(this)">Show</button>
                 </div>
                 {% else %}
-                <input type="text" name="{{ key }}" class="input" value="{{ info.db_value or '' }}" placeholder="Not set" style="font-family:monospace;font-size:.82rem;width:100%;">
+                <input type="text" name="{{ key }}" class="input" value="{{ info.db_value or '' }}" placeholder="{% if info.env_value %}Set via env var{% else %}Not set{% endif %}" style="font-family:monospace;font-size:.82rem;width:100%;">
                 {% endif %}
               </td>
               <td style="vertical-align:middle;white-space:nowrap;">
@@ -52,16 +52,16 @@
         </table>
       </div>
 
-      <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
+      <div class="flex-row flex-gap-sm" style="margin-top:16px;">
         <button type="submit" class="btn btn-primary">Save Changes</button>
-        <span style="font-size:.78rem;color:var(--text-3);">Changes are stored in the database and applied immediately.</span>
+        <span class="list-item-sub">Changes are stored in the database and applied immediately.</span>
       </div>
     </form>
   </div>
 
   <div class="card mt-3" style="background:var(--brand-light);border:1px solid var(--brand);">
-    <div style="display:flex;align-items:flex-start;gap:10px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;color:var(--brand);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <div class="flex-row" style="align-items:flex-start;gap:10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0" style="width:18px;height:18px;margin-top:2px;color:var(--brand);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       <div>
         <div style="font-weight:700;font-size:.85rem;color:var(--text);margin-bottom:4px;">How it works</div>
         <ul style="margin:0;padding-left:16px;font-size:.82rem;color:var(--text-2);line-height:1.6;">

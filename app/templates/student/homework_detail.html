@@ -4,7 +4,7 @@
 
   <!-- Back -->
   <div style="margin-bottom:16px;">
-    <a href="/student/homework" style="display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:600;color:var(--text-2);">
+    <a href="/student/homework" class="flex-row flex-gap-xs" style="display:inline-flex;font-size:.85rem;font-weight:600;color:var(--text-2);">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       All homework
     </a>
@@ -22,7 +22,7 @@
   {% if hw.description %}
   <div class="card mb-3">
     <div class="card-body">
-      <div class="section-label" style="margin-bottom:8px;">Description</div>
+      <div class="section-label section-label-mb">Description</div>
       <div style="font-size:.9rem;line-height:1.6;color:var(--text-2);white-space:pre-wrap;">{{ hw.description }}</div>
     </div>
   </div>
@@ -39,17 +39,17 @@
   <!-- File attachment -->
   {% if hw.download_url %}
   <div class="card mb-3">
-    <div class="card-body" style="display:flex;align-items:center;gap:14px;">
-      <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <div class="card-body flex-row" style="gap:14px;">
+      <div class="flex-center flex-shrink-0" style="width:44px;height:44px;border-radius:10px;background:var(--brand-light);">
         {% if hw.file_type == 'photo' %}
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         {% else %}
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         {% endif %}
       </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ hw.file_name }}</div>
-        <div style="font-size:.72rem;color:var(--text-3);margin-top:2px;">{{ hw.file_type|capitalize if hw.file_type else 'File' }}</div>
+      <div class="flex-1 min-w-0">
+        <div class="list-item-name" style="font-size:.88rem;font-weight:600;">{{ hw.file_name }}</div>
+        <div class="list-item-sub">{{ hw.file_type|capitalize if hw.file_type else 'File' }}</div>
       </div>
       <a href="{{ hw.download_url }}" target="_blank" class="btn btn-primary btn-sm">Download</a>
     </div>
@@ -65,8 +65,8 @@
   <!-- AI Summary -->
   <div class="card mb-3">
     <div class="card-body">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7C3AED,#6366F1);display:flex;align-items:center;justify-content:center;">
+      <div class="flex-row flex-gap-sm" style="margin-bottom:10px;">
+        <div class="flex-center" style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7C3AED,#6366F1);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
         <div style="font-weight:700;font-size:.85rem;">AI Summary</div>

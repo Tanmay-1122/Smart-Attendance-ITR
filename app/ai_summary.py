@@ -5,7 +5,8 @@ from flask import current_app
 
 def summarize_homework(title, description, file_text=None):
     """Use Google Gemini to generate a student-friendly homework summary."""
-    api_key = current_app.config.get('GOOGLE_AI_KEY')
+    from .api_config import get_api_config
+    api_key = get_api_config('GOOGLE_AI_KEY')
     if not api_key:
         print("[AI SUMMARY] No API key configured.")
         return None

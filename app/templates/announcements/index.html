@@ -2,7 +2,7 @@
 {% block content %}
 <div class="page">
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div class="flex-between" style="margin-bottom:20px;">
     <div>
       <div class="page-title" style="margin-bottom:0;">Announcements</div>
       <div class="page-sub" style="margin-bottom:0;">Important updates and notices</div>
@@ -17,9 +17,9 @@
     {% for ann in announcements %}
     <div class="card" style="{% if ann.pinned %}border-color:var(--brand);box-shadow:0 0 0 1px var(--brand-glow);{% endif %}">
       <div class="card-body">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <div class="flex-between" style="align-items:flex-start;gap:8px;margin-bottom:8px;">
+          <div class="flex-1">
+            <div class="flex-row flex-gap-xs" style="margin-bottom:4px;">
               {% if ann.pinned %}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--brand)" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>
               {% endif %}
@@ -35,11 +35,11 @@
             </div>
             <div style="font-weight:700;font-size:.95rem;color:var(--text);">{{ ann.title }}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+          <div class="flex-row flex-gap-xs flex-shrink-0">
             {% if current_user.is_admin %}
             <form method="POST" action="/announcements/pin/{{ ann.id }}" style="margin:0;">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="{{ 'Unpin' if ann.pinned else 'Pin' }}">
+              <button type="submit" class="flex-center" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;" title="{{ 'Unpin' if ann.pinned else 'Pin' }}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ 'var(--brand)' if ann.pinned else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>
               </button>
             </form>
@@ -47,7 +47,7 @@
             {% if ann.author_id == current_user.id or current_user.is_admin %}
             <form method="POST" action="/announcements/delete/{{ ann.id }}" onsubmit="return confirm('Delete this announcement?');" style="margin:0;">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Delete">
+              <button type="submit" class="flex-center" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;" title="Delete">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </form>

@@ -2,8 +2,8 @@
 {% block content %}
 <div class="page">
 
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-    <a href="/teacher/classes" style="color:var(--text-3);font-size:1.2rem;">&larr;</a>
+  <div class="page-header-row">
+    <a href="/teacher/classes" class="page-back">&larr;</a>
     <div class="page-title" style="margin:0;">{{ tc.name }}</div>
   </div>
   {% if tc.description %}
@@ -12,14 +12,13 @@
   <div class="page-sub">Enrolled students and attendance stats</div>
   {% endif %}
 
-  <!-- Stats summary -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
+  <div class="stat-grid-3">
     <div class="streak-card">
       <div class="streak-value">{{ students|length }}</div>
       <div class="streak-label">Students</div>
     </div>
     <div class="streak-card">
-      <div class="streak-value" style="background:linear-gradient(135deg,var(--success),#22C55E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+      <div class="streak-value text-grad-success">
         {% set total_sessions = [] %}
         {% for s in students %}{% if total_sessions.append(s.total) %}{% endif %}{% endfor %}
         {{ students|map(attribute='total')|max if students else 0 }}
@@ -37,23 +36,22 @@
     </div>
   </div>
 
-  <!-- Student list -->
-  <div class="section-label" style="margin-bottom:8px;">Enrolled students</div>
+  <div class="section-label section-label-mb">Enrolled students</div>
   {% if students %}
   <div class="card">
     {% for s in students %}
-    <div style="padding:14px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;">
+    <div class="list-item-bordered" style="padding:14px 18px;">
+      <div class="list-item" style="align-items:flex-start;">
+        <div class="list-item-info">
+          <div class="flex-row flex-gap-sm">
             <div style="font-weight:700;font-size:.9rem;color:var(--text);">{{ s.student.user.name if s.student.user else 'Unknown' }}</div>
-            <span style="font-size:.72rem;color:var(--text-3);">#{{ s.student.roll_number }}</span>
+            <span style="font-size:.72rem;color:var(--text-tertiary);">#{{ s.student.roll_number }}</span>
           </div>
-          <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;">
-            <span style="font-size:.72rem;font-weight:600;color:{% if s.pct >= 75 %}var(--success){% elif s.pct >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+          <div class="flex-row flex-gap-md flex-wrap" style="margin-top:6px;">
+            <span style="font-size:.72rem;font-weight:600;{% if s.pct >= 75 %}color:var(--success){% elif s.pct >= 50 %}color:var(--warning){% else %}color:var(--danger){% endif %};">
               {{ s.pct }}% attendance
             </span>
-            <span style="font-size:.72rem;color:var(--text-3);">{{ s.present }}P / {{ s.review }}R / {{ s.absent }}A</span>
+            <span style="font-size:.72rem;color:var(--text-tertiary);">{{ s.present }}P / {{ s.review }}R / {{ s.absent }}A</span>
           </div>
           {% if s.total > 0 %}
           <div class="progress-track" style="margin-top:6px;">
@@ -63,7 +61,7 @@
         </div>
         <form method="POST" action="/teacher/classes/{{ tc.id }}/unenroll/{{ s.student.id }}" style="margin:0;" onsubmit="return confirm('Remove {{ s.student.user.name }} from {{ tc.name }}?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger);font-size:.72rem;padding:5px 10px;">Remove</button>
+          <button type="submit" class="btn btn-sm btn-ghost btn-danger-ghost" style="font-size:.72rem;padding:5px 10px;">Remove</button>
         </form>
       </div>
     </div>
@@ -76,7 +74,7 @@
   </div>
   {% endif %}
 
-  <div style="display:flex;gap:10px;margin-top:14px;">
+  <div class="flex-row flex-gap-sm" style="margin-top:14px;">
     <a href="/teacher/dashboard?class={{ tc.name }}" class="btn btn-primary">Scan attendance</a>
     <a href="/teacher/classes" class="btn btn-ghost">Back to classes</a>
   </div>

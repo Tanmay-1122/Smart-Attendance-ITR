@@ -57,23 +57,23 @@
 
   <!-- Recent homework -->
   {% if homework_list %}
-  <div class="section-label" style="margin-bottom:8px;">Recent homework</div>
-  <div class="card" style="margin-bottom:10px;">
+  <div class="section-label section-label-mb">Recent homework</div>
+  <div class="card mb-3">
     {% for hw in homework_list %}
     <div style="padding:14px 16px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div style="flex:1;min-width:0;">
+      <div class="flex-between" style="align-items:flex-start;gap:8px;">
+        <div class="flex-1 min-w-0">
           <div style="font-weight:700;font-size:.9rem;">{{ hw.title }}</div>
-          <div style="font-size:.78rem;color:var(--text-3);margin-top:2px;">{{ hw.class_name }} &middot; {{ hw.created_at.strftime('%d %b %Y') if hw.created_at else '' }}</div>
+          <div class="list-item-sub">{{ hw.class_name }} &middot; {{ hw.created_at.strftime('%d %b %Y') if hw.created_at else '' }}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <div class="flex-row flex-gap-xs flex-shrink-0">
           {% if hw.file_name %}
           <span class="badge badge-present" style="font-size:.65rem;">{{ hw.file_type or 'file' }}</span>
           {% endif %}
           {% if hw.teacher_id == current_user.id %}
           <form method="POST" action="/teacher/homework/delete/{{ hw.id }}" onsubmit="return confirm('Delete this homework?');" style="margin:0;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" onmouseover="this.style.background='var(--danger-bg)';this.style.color='var(--danger)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-3)'" title="Delete">
+            <button type="submit" class="flex-center" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-3);cursor:pointer;transition:all .15s;" onmouseover="this.style.background='var(--danger-bg)';this.style.color='var(--danger)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-3)'" title="Delete">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
           </form>

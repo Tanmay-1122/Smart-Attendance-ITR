@@ -2,9 +2,7 @@
 {% block content %}
 <div class="page">
 
-  <!-- Hero -->
   <div class="hero hero-wrapper" style="padding-right:88px;">
-    <!-- Decorative geometric art -->
     <svg style="position:absolute;top:0;right:0;width:100%;height:100%;pointer-events:none;opacity:0.08;" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="320" cy="30" r="2" fill="white"/>
       <circle cx="360" cy="60" r="1.5" fill="white"/>
@@ -36,7 +34,6 @@
     </div>
   </div>
 
-  <!-- At-risk warning -->
   {% if percentage > 0 and percentage < 75 %}
   <div class="alert alert-danger mb-2">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -44,7 +41,6 @@
   </div>
   {% endif %}
 
-  <!-- Streak cards -->
   <div class="stat-card">
     <div class="streak-card">
       <div class="streak-value">{{ streak }}</div>
@@ -56,7 +52,6 @@
     </div>
   </div>
 
-  <!-- Monthly Calendar -->
   <div class="section-header">
     <div class="section-label" style="margin-bottom:0;" id="cal-label">June 2026</div>
     <div class="cal-legend">
@@ -69,19 +64,17 @@
 
   <div class="card mb-2">
     <div class="card-body" style="padding:14px 12px;">
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;">
+      <div class="cal-grid-header">
         {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
-        <div style="text-align:center;font-size:.62rem;font-weight:700;color:var(--text-3);letter-spacing:.04em;padding-bottom:4px;">{{ d }}</div>
+        <div class="cal-grid-day-label">{{ d }}</div>
         {% endfor %}
       </div>
-      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+      <div id="cal-grid" class="cal-grid"></div>
     </div>
   </div>
 
-  <!-- Tooltip -->
   <div id="cal-tip" class="cal-tip"></div>
 
-  <!-- Enroll prompt -->
   {% if not enrolled %}
   <div class="enroll-prompt mb-2">
     <div>
@@ -92,7 +85,6 @@
   </div>
   {% endif %}
 
-  <!-- Class breakdown -->
   {% if class_stats %}
   <div class="section-label mb-2">Class breakdown</div>
   <div class="card mb-2">
@@ -100,14 +92,12 @@
     <div class="class-row">
       <div class="class-row-header">
         <div class="class-name">{{ cn }}</div>
-        <div class="class-pct"
-          style="color:{%- if s.pct >= 75 %}var(--success){%- elif s.pct >= 50 %}var(--warning){%- else %}var(--danger){%- endif %};">
+        <div class="class-pct" style="{% if s.pct >= 75 %}color:var(--success){% elif s.pct >= 50 %}color:var(--warning){% else %}color:var(--danger){% endif %};">
           {{ s.pct }}%
         </div>
       </div>
       <div class="progress-track">
-        <div class="progress-fill {%- if s.pct >= 75 %} good{%- elif s.pct >= 50 %} mid{%- else %} bad{%- endif %}"
-             style="width:{{ s.pct }}%;"></div>
+        <div class="progress-fill {% if s.pct >= 75 %}good{% elif s.pct >= 50 %}mid{% else %}bad{% endif %}" style="width:{{ s.pct }}%;"></div>
       </div>
       <div class="class-detail">{{ s.present }} of {{ s.total }} classes attended</div>
     </div>
@@ -115,7 +105,6 @@
   </div>
   {% endif %}
 
-  <!-- Recent Records -->
   <div class="section-label mb-2">Recent attendance</div>
   {% if records %}
   <div class="card" style="margin-bottom:10px;">
@@ -143,6 +132,12 @@
 
 </div>
 
+<style>
+.cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+.cal-grid-day-label { text-align: center; font-size: .62rem; font-weight: 700; color: var(--text-tertiary); letter-spacing: .04em; padding-bottom: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+</style>
+
 <script>
 (function () {
   const DATA = {{ attendance_json | safe }};
@@ -156,8 +151,7 @@
   const firstDow  = new Date(year, month, 1).getDay();
   const startOff  = (firstDow + 6) % 7;
 
-  document.getElementById('cal-label').textContent =
-    MONTHS[month] + ' ' + year;
+  document.getElementById('cal-label').textContent = MONTHS[month] + ' ' + year;
 
   const grid = document.getElementById('cal-grid');
   const tip  = document.getElementById('cal-tip');

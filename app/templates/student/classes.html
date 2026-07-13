@@ -7,12 +7,12 @@
 
   <!-- Enrolled Classes -->
   {% if enrolled_classes %}
-  <div class="section-label" style="margin-bottom:8px;">Enrolled ({{ enrolled_classes|length }})</div>
+  <div class="section-label section-label-mb">Enrolled ({{ enrolled_classes|length }})</div>
   <div class="card mb-3">
     {% for ec in enrolled_classes %}
     <div style="padding:14px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div style="flex:1;min-width:0;">
+      <div class="flex-between flex-gap-md">
+        <div class="flex-1 min-w-0">
           <div style="font-weight:700;font-size:.95rem;color:var(--text);">{{ ec.tc.name }}</div>
           <div style="font-size:.78rem;color:var(--text-2);margin-top:2px;">
             {% if ec.tc.description %}{{ ec.tc.description }} &middot; {% endif %}
@@ -21,7 +21,7 @@
         </div>
         <form method="POST" action="/student/classes/unenroll/{{ ec.tc.id }}" style="margin:0;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger);">Unenroll</button>
+          <button type="submit" class="btn btn-sm btn-ghost btn-danger-ghost">Unenroll</button>
         </form>
       </div>
     </div>
@@ -38,12 +38,12 @@
   {% endfor %}
 
   {% if available %}
-  <div class="section-label" style="margin-bottom:8px;">Available classes</div>
+  <div class="section-label section-label-mb">Available classes</div>
   <div class="card">
     {% for c in available %}
     <div style="padding:14px 18px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div style="flex:1;min-width:0;">
+      <div class="flex-between flex-gap-md">
+        <div class="flex-1 min-w-0">
           <div style="font-weight:700;font-size:.95rem;color:var(--text);">{{ c.name }}</div>
           <div style="font-size:.78rem;color:var(--text-2);margin-top:2px;">
             {% if c.description %}{{ c.description }} &middot; {% endif %}

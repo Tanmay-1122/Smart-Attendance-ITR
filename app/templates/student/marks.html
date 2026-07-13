@@ -35,7 +35,7 @@
                 {{ '%.1f'|format(pct) }}%
               </span>
               {% else %}
-              <span style="color:var(--text-3);">—</span>
+              <span class="list-item-sub">—</span>
               {% endif %}
             </td>
             <td style="font-size:.82rem;color:var(--text-2);">{{ r.created_at.strftime('%d %b %Y') if r.created_at else '' }}</td>
@@ -50,12 +50,12 @@
   {% endif %}
   {% else %}
   <div class="card">
-    <div class="empty" style="padding:40px;text-align:center;color:var(--text-3);">
+    <div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:12px;">
         <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
       </svg>
-      <div style="font-size:.95rem;font-weight:600;">No results published yet</div>
-      <div style="font-size:.82rem;margin-top:4px;">Your teacher will publish marks here after scanning a marksheet.</div>
+      <div>No results published yet</div>
+      <div>Your teacher will publish marks here after scanning a marksheet.</div>
     </div>
   </div>
   {% endif %}

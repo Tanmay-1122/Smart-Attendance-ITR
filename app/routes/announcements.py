@@ -1,7 +1,7 @@
 import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from ..models import Announcement, StudentClass, Student
+from ..models import Announcement, StudentClass, Student, TeacherClass
 from .. import db
 
 announcements_bp = Blueprint('announcements', __name__, url_prefix='/announcements')
@@ -30,8 +30,7 @@ def index():
             query = query.filter(Announcement.target == 'ALL')
 
     elif current_user.role == 'teacher':
-        my_class_names = [tc.name for tc in
-                          __import__('..models', fromlist=['TeacherClass']).TeacherClass.query.filter_by(teacher_id=current_user.id).all()]
+        my_class_names = [tc.name for tc in TeacherClass.query.filter_by(teacher_id=current_user.id).all()]
         query = query.filter(
             (Announcement.target == 'ALL') |
             ((Announcement.target == 'CLASS') & (Announcement.target_class.in_(my_class_names))) |
@@ -78,8 +77,6 @@ def create():
         flash('Announcement posted!')
         return redirect(url_for('announcements.index'))
 
-    # Get teacher's classes for the class selector
-    from ..models import TeacherClass
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).all() if current_user.role == 'teacher' else []
 
     return render_template('announcements/create.html', classes=classes)

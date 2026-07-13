@@ -10,7 +10,7 @@
     {% for lr in leave_requests %}
     <div style="padding:14px 16px;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div style="flex:1;">
+        <div class="flex-1">
           <div style="font-weight:700;font-size:.92rem;">{{ lr.class_name }}</div>
           <div style="font-size:.78rem;color:var(--text-tertiary);margin-top:2px;">
             {{ lr.start_date.strftime('%d %b') }} – {{ lr.end_date.strftime('%d %b %Y') }}

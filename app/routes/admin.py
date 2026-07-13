@@ -368,7 +368,10 @@ def api_keys():
                 )
                 db.session.add(config)
 
-            current_app.config[key] = value if value else ''
+            if value:
+                current_app.config[key] = value
+            else:
+                current_app.config.pop(key, None)
 
         db.session.commit()
         flash('API keys updated successfully!')
@@ -383,6 +386,7 @@ def api_keys():
             'description': desc,
             'is_secret': key in SECRET_KEYS,
             'db_value': db_row.value if db_row else None,
+            'env_value': env_val if not (db_row and db_row.value) else '',
             'source': 'DB' if (db_row and db_row.value) else 'Env' if env_val else 'Not Set',
         }
 

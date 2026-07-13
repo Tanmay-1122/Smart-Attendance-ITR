@@ -68,7 +68,7 @@
     <div class="card mb-3" style="border-color:var(--warning, #f59e0b);">
       <div class="section-header">
         <div class="section-label" style="color:var(--warning, #f59e0b);">Unmatched Entries ({{ unmatched|length }})</div>
-        <span style="font-size:.78rem;color:var(--text-3);">Not found in class roster</span>
+        <span class="list-item-sub">Not found in class roster</span>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
@@ -94,13 +94,13 @@
           </tbody>
         </table>
       </div>
-      <div style="padding:12px 0 0;font-size:.82rem;color:var(--text-3);">
+      <div class="list-item-sub" style="padding:12px 0 0;">
         These entries were found in the image but don't match any enrolled student. They will be skipped.
       </div>
     </div>
     {% endif %}
 
-    <div style="display:flex;gap:8px;">
+    <div class="flex-row flex-gap-sm">
       <button type="submit" class="btn btn-primary" id="send-btn">
         <span id="send-text">Send to {{ matched|length }} Students</span>
         <span id="send-loading" style="display:none;align-items:center;gap:8px;">

@@ -10,14 +10,12 @@
     {% for lr in leave_requests %}
     <div class="card">
       <div class="card-body">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;">
+        <div class="flex-between" style="align-items:flex-start;gap:8px;margin-bottom:10px;">
           <div>
             <div style="font-weight:700;font-size:.95rem;">
               {{ lr.student.user.name if lr.student and lr.student.user else 'Unknown' }}
             </div>
-            <div style="font-size:.78rem;color:var(--text-tertiary);margin-top:2px;">
-              {{ lr.class_name }} &middot; Roll {{ lr.student.roll_number if lr.student else '' }}
-            </div>
+            <div class="list-item-sub">{{ lr.class_name }} &middot; Roll {{ lr.student.roll_number if lr.student else '' }}</div>
           </div>
           <span class="badge badge-review">PENDING</span>
         </div>
@@ -35,15 +33,15 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="field">
             <label class="label" style="font-size:.78rem;">Note (optional)</label>
-            <input type="text" name="note" class="input" placeholder="Add a note for the student" style="font-size:.85rem;">
+            <input type="text" name="note" class="input" style="font-size:.85rem;" placeholder="Add a note for the student">
           </div>
-          <div style="display:flex;gap:8px;">
+          <div class="flex-row flex-gap-sm">
             <button type="submit" formaction="/leave/approve/{{ lr.id }}" class="btn btn-success" style="flex:1;">Approve</button>
             <button type="submit" formaction="/leave/reject/{{ lr.id }}" class="btn btn-danger" style="flex:1;">Reject</button>
           </div>
         </form>
 
-        <div style="font-size:.68rem;color:var(--text-tertiary);margin-top:8px;">
+        <div class="list-item-sub" style="margin-top:8px;">
           Requested {{ lr.created_at.strftime('%d %b %Y, %I:%M %p') }}
         </div>
       </div>

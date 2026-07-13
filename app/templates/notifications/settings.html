@@ -8,11 +8,11 @@
   <div class="card mb-3">
     <div class="card-body">
       <div class="section-label" style="margin-bottom:12px;">Push Notifications</div>
-      <div id="push-status" style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:var(--radius-md);">
-        <div id="push-dot" style="width:10px;height:10px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>
-        <div style="flex:1;">
+      <div id="push-status" class="flex-row flex-gap-xs" style="padding:12px;background:var(--bg);border-radius:var(--radius-md);">
+        <div id="push-dot" class="flex-shrink-0" style="width:10px;height:10px;border-radius:50%;background:var(--border);"></div>
+        <div class="flex-1">
           <div id="push-label" style="font-size:.88rem;font-weight:600;">Checking...</div>
-          <div id="push-desc" style="font-size:.78rem;color:var(--text-tertiary);"></div>
+          <div id="push-desc" class="list-item-sub"></div>
         </div>
         <button id="push-toggle" class="btn btn-sm btn-ghost" style="margin:0;display:none;width:auto;" onclick="togglePush()"></button>
       </div>
@@ -23,25 +23,25 @@
     <div class="card-body">
       <div class="section-label" style="margin-bottom:12px;">What you'll be notified about</div>
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div class="flex-row flex-gap-xs">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           <div>
             <div style="font-size:.88rem;font-weight:600;">New Homework</div>
-            <div style="font-size:.75rem;color:var(--text-tertiary);">When a teacher posts homework in your class</div>
+            <div class="list-item-sub">When a teacher posts homework in your class</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div class="flex-row flex-gap-xs">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
           <div>
             <div style="font-size:.88rem;font-weight:600;">Attendance Updates</div>
-            <div style="font-size:.75rem;color:var(--text-tertiary);">After attendance is saved for your class</div>
+            <div class="list-item-sub">After attendance is saved for your class</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div class="flex-row flex-gap-xs">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <div>
             <div style="font-size:.88rem;font-weight:600;">Leave Decisions</div>
-            <div style="font-size:.75rem;color:var(--text-tertiary);">When your leave request is approved or rejected</div>
+            <div class="list-item-sub">When your leave request is approved or rejected</div>
           </div>
         </div>
       </div>

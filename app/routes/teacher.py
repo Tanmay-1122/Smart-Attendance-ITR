@@ -23,7 +23,73 @@ def dashboard():
     classes = TeacherClass.query.filter_by(teacher_id=current_user.id).order_by(TeacherClass.created_at.desc()).all()
     preselected = request.args.get('class', '')
     classes_json = json.dumps([{'id': c.id, 'name': c.name} for c in classes])
-    return render_template('teacher/dashboard.html', classes=classes, preselected=preselected, classes_json=classes_json)
+
+    # KPIs
+    total_classes = len(classes)
+    total_students = sum(
+        StudentClass.query.filter_by(class_id=c.id).count() for c in classes
+    )
+
+    today = datetime.date.today()
+    today_present = 0
+    today_absent = 0
+    today_review = 0
+    for c in classes:
+        student_ids = [sc.student_id for sc in StudentClass.query.filter_by(class_id=c.id).all()]
+        if student_ids:
+            today_records = AttendanceRecord.query.filter(
+                AttendanceRecord.student_id.in_(student_ids),
+                AttendanceRecord.date == today,
+                AttendanceRecord.class_name == c.name
+            ).all()
+            for r in today_records:
+                if r.status == 'PRESENT':
+                    today_present += 1
+                elif r.status == 'ABSENT':
+                    today_absent += 1
+                elif r.status == 'REVIEW':
+                    today_review += 1
+
+    total_homework = Homework.query.filter_by(teacher_id=current_user.id).count()
+
+    # Recent sessions (last 7 days)
+    recent_dates = db.session.query(AttendanceRecord.date, AttendanceRecord.class_name).filter(
+        AttendanceRecord.student_id.in_(
+            db.session.query(StudentClass.student_id).filter(
+                StudentClass.class_id.in_([c.id for c in classes])
+            )
+        ) if classes else [0],
+        AttendanceRecord.date >= (today - datetime.timedelta(days=7))
+    ).distinct().order_by(AttendanceRecord.date.desc()).limit(10).all()
+
+    # Today's marked classes
+    today_classes = 0
+    if classes:
+        class_student_ids = {}
+        for c in classes:
+            sids = [sc.student_id for sc in StudentClass.query.filter_by(class_id=c.id).all()]
+            class_student_ids[c.name] = sids
+        for c in classes:
+            sids = class_student_ids.get(c.name, [])
+            if sids:
+                count = AttendanceRecord.query.filter(
+                    AttendanceRecord.student_id.in_(sids),
+                    AttendanceRecord.date == today,
+                    AttendanceRecord.class_name == c.name
+                ).count()
+                if count > 0:
+                    today_classes += 1
+
+    return render_template('teacher/dashboard.html', classes=classes,
+                           preselected=preselected, classes_json=classes_json,
+                           total_classes=total_classes,
+                           total_students=total_students,
+                           total_homework=total_homework,
+                           today_present=today_present,
+                           today_absent=today_absent,
+                           today_review=today_review,
+                           today_classes_scanned=today_classes,
+                           recent_sessions=recent_dates)
 
 @teacher_bp.route('/classes')
 @login_required
@@ -647,11 +713,15 @@ def delete_homework(hw_id):
     # Delete from Telegram
     if hw.telegram_msg_id:
         try:
+            from ..api_config import get_api_config
             import requests
-            requests.post(f"https://api.telegram.org/bot{current_app.config['TELEGRAM_BOT_TOKEN']}/deleteMessage",
-                          json={'chat_id': current_app.config['TELEGRAM_GROUP_ID'],
-                                'message_id': hw.telegram_msg_id},
-                          timeout=10)
+            bot_token = get_api_config('TELEGRAM_BOT_TOKEN')
+            group_id = get_api_config('TELEGRAM_GROUP_ID')
+            if bot_token and group_id:
+                requests.post(f"https://api.telegram.org/bot{bot_token}/deleteMessage",
+                              json={'chat_id': group_id,
+                                    'message_id': hw.telegram_msg_id},
+                              timeout=10)
         except Exception:
             pass
 
