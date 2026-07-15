@@ -7,7 +7,6 @@ from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord
 from .. import db
 from ..api_config import KNOWN_KEYS, SECRET_KEYS
 from ..email import send_email, send_email_sync
-import time
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -404,6 +403,11 @@ def email_settings():
     if request.method == 'POST':
         for key in SMTP_FIELDS:
             value = request.form.get(key, '').strip()
+
+            # Auto-correct SMTP_FROM if missing angle brackets
+            if key == 'SMTP_FROM' and value and '<' not in value:
+                value = f'SmartAttend <{value}>'
+
             config = ApiConfig.query.filter_by(key=key).first()
             if config:
                 config.value = value if value else None
@@ -445,85 +449,76 @@ def email_settings():
 @admin_bp.route('/test-email', methods=['POST'])
 @admin_required
 def test_email():
-    from ..models import Student
+    try:
+        from ..models import Student
 
-    smtp_host = current_app.config.get('SMTP_HOST', '')
-    if not smtp_host:
-        flash('SMTP is not configured. Save your email settings first.')
-        return redirect(url_for('admin.email_settings'))
+        smtp_host = current_app.config.get('SMTP_HOST', '')
+        if not smtp_host:
+            flash('SMTP is not configured. Save your email settings first.')
+            return redirect(url_for('admin.email_settings'))
 
-    message = request.form.get('message', '').strip() or 'This is a test email from SmartAttend.'
-    recipients = request.form.get('recipients', 'admin')
+        message = request.form.get('message', '').strip() or 'This is a test email from SmartAttend.'
+        recipients = request.form.get('recipients', 'admin')
 
-    # Auto-correct From address if missing angle brackets
-    smtp_from = current_app.config.get('SMTP_FROM', '')
-    if smtp_from and '<' not in smtp_from:
-        corrected = f'SmartAttend <{smtp_from}>'
-        current_app.config['SMTP_FROM'] = corrected
-        from ..models import ApiConfig
-        cfg = ApiConfig.query.filter_by(key='SMTP_FROM').first()
-        if cfg:
-            cfg.value = corrected
-            db.session.commit()
-        flash(f'From address corrected to: {corrected}')
-
-    email_lines = message.replace('\n', '<br>')
-    html = f"""
-    <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
-      <div style="background:linear-gradient(135deg,#6366F1,#7C3AED);border-radius:16px;padding:32px;text-align:center;color:#fff;margin-bottom:24px;">
-        <h1 style="margin:0;font-size:1.4rem;font-weight:800;">SmartAttend</h1>
-        <p style="margin:8px 0 0;opacity:0.8;font-size:0.9rem;">Admin Announcement</p>
-      </div>
-      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:24px;">
-        <p style="color:#374151;font-size:0.95rem;margin:0 0 16px;">{email_lines}</p>
-        <div style="background:#EEF2FF;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <p style="margin:0;color:#4338CA;font-weight:600;font-size:0.85rem;">Sent by {current_user.name} (Admin)</p>
+        email_lines = message.replace('\n', '<br>')
+        html = f"""
+        <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+          <div style="background:linear-gradient(135deg,#6366F1,#7C3AED);border-radius:16px;padding:32px;text-align:center;color:#fff;margin-bottom:24px;">
+            <h1 style="margin:0;font-size:1.4rem;font-weight:800;">SmartAttend</h1>
+            <p style="margin:8px 0 0;opacity:0.8;font-size:0.9rem;">Admin Announcement</p>
+          </div>
+          <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:24px;">
+            <p style="color:#374151;font-size:0.95rem;margin:0 0 16px;">{email_lines}</p>
+            <div style="background:#EEF2FF;border-radius:8px;padding:16px;margin-bottom:16px;">
+              <p style="margin:0;color:#4338CA;font-weight:600;font-size:0.85rem;">Sent by {current_user.name} (Admin)</p>
+            </div>
+            <p style="color:#9CA3AF;font-size:0.82rem;margin:0;">This is a test message sent from the Admin Panel.</p>
+          </div>
+          <p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:16px;">SmartAttend — AI-powered attendance management</p>
         </div>
-        <p style="color:#9CA3AF;font-size:0.82rem;margin:0;">This is a test message sent from the Admin Panel.</p>
-      </div>
-      <p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:16px;">SmartAttend — AI-powered attendance management</p>
-    </div>
-    """
+        """
 
-    emails = []
+        emails = []
 
-    if recipients in ('admin', 'all'):
-        if current_user.email:
-            emails.append(current_user.email)
+        if recipients in ('admin', 'all'):
+            if current_user.email:
+                emails.append(('admin', current_user.email))
 
-    if recipients in ('students', 'all'):
-        students = Student.query.join(Student.user).all()
-        for s in students:
-            if s.user and s.user.email and s.user.email_notifications:
-                if s.user.email not in emails:
-                    emails.append(s.user.email)
+        if recipients in ('students', 'all'):
+            students = Student.query.join(Student.user).all()
+            for s in students:
+                if s.user and s.user.email and s.user.email_notifications:
+                    addr = s.user.email
+                    if addr not in [e[1] for e in emails]:
+                        emails.append(('student', addr))
 
-    if not emails:
-        flash('No recipients found. Make sure students have email addresses set.')
-        return redirect(url_for('admin.email_settings'))
+        if not emails:
+            flash('No recipients found. Make sure students have email addresses set.')
+            return redirect(url_for('admin.email_settings'))
 
-    sent = 0
-    failed = 0
-    errors = []
-    for i, addr in enumerate(emails):
-        try:
-            result = send_email_sync(addr, 'SmartAttend — Test Email', html)
-            if result:
-                sent += 1
-            else:
-                failed += 1
-                errors.append(addr)
-        except Exception as e:
-            failed += 1
-            errors.append(f"{addr} ({e})")
+        # Send first email synchronously to verify credentials
+        first_type, first_addr = emails[0]
+        verified = send_email_sync(first_addr, 'SmartAttend — Test Email', html)
 
-        # Delay between sends to avoid Gmail rate limiting
-        if i < len(emails) - 1:
-            time.sleep(1)
+        if not verified:
+            flash(f'SMTP verification failed for {first_addr}. Check your credentials and try again.')
+            return redirect(url_for('admin.email_settings'))
 
-    if failed:
-        flash(f'Sent: {sent} | Failed: {failed}. Failed: {", ".join(errors[:3])}{"..." if len(errors) > 3 else ""}')
-    else:
-        flash(f'Test emails sent successfully to {sent} recipient{"s" if sent != 1 else ""}.')
+        # Remaining emails sent in background (async)
+        remaining = emails[1:]
+        if remaining:
+            for _, addr in remaining:
+                send_email(addr, 'SmartAttend — Test Email', html)
+
+        total = len(emails)
+        if remaining:
+            flash(f'Credentials verified! Sent to {first_addr}. Sending to {len(remaining)} more in background.')
+        else:
+            flash(f'Test email sent successfully to {first_addr}!')
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        flash(f'Error sending test email: {e}')
 
     return redirect(url_for('admin.email_settings'))
