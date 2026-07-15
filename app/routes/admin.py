@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord, Department, ApiConfig
 from .. import db
-from ..api_config import KNOWN_KEYS, SECRET_KEYS
+from ..api_config import KNOWN_KEYS, SECRET_KEYS, get_api_config
 from ..email import send_email, send_email_sync
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -452,8 +452,9 @@ def test_email():
     try:
         from ..models import Student
 
-        resend_key = current_app.config.get('RESEND_API_KEY', '')
-        smtp_host = current_app.config.get('SMTP_HOST', '')
+        # Use get_api_config which checks DB first, then config, then env
+        resend_key = get_api_config('RESEND_API_KEY', '')
+        smtp_host = get_api_config('SMTP_HOST', '')
 
         if not resend_key and not smtp_host:
             flash('No email service configured. Set a Resend API key or SMTP settings first.')
@@ -491,9 +492,9 @@ def test_email():
         else:
             # Verify SMTP credentials
             import smtplib, ssl
-            smtp_port = int(current_app.config.get('SMTP_PORT', 587))
-            smtp_user = current_app.config.get('SMTP_USER', '')
-            smtp_pass = current_app.config.get('SMTP_PASS', '')
+            smtp_port = int(get_api_config('SMTP_PORT', 587))
+            smtp_user = get_api_config('SMTP_USER', '')
+            smtp_pass = get_api_config('SMTP_PASS', '')
             try:
                 context = ssl.create_default_context()
                 with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
