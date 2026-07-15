@@ -462,13 +462,13 @@ def test_email():
 
         # Verify credentials before sending
         if resend_key:
-            # Test Resend API with a dummy call to verify key works
-            import json, urllib.request
+            # Test Resend by sending actual test email to admin (onboarding@resend.dev only works for account owner)
+            # This both verifies the key AND tests delivery in one step
             test_payload = json.dumps({
-                'from': 'SmartAttend <onboarding@resend.dev>',
-                'to': ['test@resend.dev'],
-                'subject': 'test',
-                'html': 'test',
+                'from': 'onboarding@resend.dev',
+                'to': [current_user.email],
+                'subject': 'SmartAttend — Test Email',
+                'html': '<p>SMTP verification successful. This test email confirms your Resend API key works.</p>',
             }).encode('utf-8')
             req = urllib.request.Request(
                 'https://api.resend.com/emails',
@@ -482,7 +482,7 @@ def test_email():
             except urllib.error.HTTPError as e:
                 body = e.read().decode('utf-8', errors='replace')
                 if e.code == 403:
-                    flash(f'Resend API key rejected (403). Check your key at resend.com.')
+                    flash(f'Resend API key rejected (403). Check your key at resend.com. Error: {body}')
                 else:
                     flash(f'Resend API error {e.code}: {body}')
                 return redirect(url_for('admin.email_settings'))
