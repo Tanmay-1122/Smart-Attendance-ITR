@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+
+  <div class="section-header">
+    <div class="page-title">Email Settings</div>
+    <div class="page-sub">Configure Gmail / SMTP for password resets, notifications, and alerts.</div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="flex-row" style="align-items:center;gap:12px;">
+      <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{% if smtp_configured %}#ECFDF5{% else %}#FEF2F2{% endif %};">
+        <svg viewBox="0 0 24 24" fill="none" stroke="{% if smtp_configured %}#10B981{% else %}#EF4444{% endif %}" stroke-width="2" style="width:20px;height:20px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:0.9rem;color:var(--text);">SMTP Status: <span style="color:{% if smtp_configured %}#10B981{% else %}#EF4444{% endif %};">{% if smtp_configured %}Configured{% else %}Not Configured{% endif %}</span></div>
+        <div style="font-size:0.82rem;color:var(--text-2);">{% if smtp_configured %}Emails will be sent via {{ configs.SMTP_HOST.db_value }}{% else %}Configure SMTP below to enable email notifications{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div style="display:grid;gap:20px;">
+        <div class="field">
+          <label class="label" for="SMTP_HOST">SMTP Host</label>
+          <input type="text" id="SMTP_HOST" name="SMTP_HOST" class="input" value="{{ configs.SMTP_HOST.db_value }}" placeholder="smtp.gmail.com" style="font-family:monospace;">
+          <div class="list-item-sub" style="margin-top:4px;">For Gmail: <code>smtp.gmail.com</code></div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="SMTP_PORT">SMTP Port</label>
+          <input type="text" id="SMTP_PORT" name="SMTP_PORT" class="input" value="{{ configs.SMTP_PORT.db_value or '587' }}" placeholder="587" style="font-family:monospace;width:120px;">
+          <div class="list-item-sub" style="margin-top:4px;">Default: <code>587</code> (TLS)</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="SMTP_USER">SMTP Username (Email)</label>
+          <input type="text" id="SMTP_USER" name="SMTP_USER" class="input" value="{{ configs.SMTP_USER.db_value }}" placeholder="your-email@gmail.com" style="font-family:monospace;">
+          <div class="list-item-sub" style="margin-top:4px;">Your full Gmail address</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="SMTP_PASS">SMTP Password (App Password)</label>
+          <div class="secret-field flex-row flex-gap-xs">
+            <input type="password" id="SMTP_PASS" name="SMTP_PASS" class="input secret-input" value="{{ configs.SMTP_PASS.db_value }}" placeholder="{% if configs.SMTP_PASS.source == 'DB' %}Saved (hidden){% else %}16-character app password{% endif %}" style="font-family:monospace;width:100%;">
+            <button type="button" class="toggle-secret" style="padding:4px 8px;font-size:.75rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;white-space:nowrap;background:var(--surface);color:var(--text-2);" onclick="toggleSecret(this)">Show</button>
+          </div>
+          <div class="list-item-sub" style="margin-top:4px;">Use a <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--brand);">Gmail App Password</a>, NOT your real password</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="SMTP_FROM">From Address</label>
+          <input type="text" id="SMTP_FROM" name="SMTP_FROM" class="input" value="{{ configs.SMTP_FROM.db_value }}" placeholder="SmartAttend &lt;your-email@gmail.com&gt;" style="font-family:monospace;">
+          <div class="list-item-sub" style="margin-top:4px;">Example: <code>SmartAttend &lt;you@gmail.com&gt;</code></div>
+        </div>
+      </div>
+
+      <div class="flex-row flex-gap-sm" style="margin-top:24px;">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </div>
+    </form>
+
+    <form method="POST" action="/admin/test-email" style="margin-top:16px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <button type="submit" class="btn btn-ghost">Send Test Email</button>
+    </form>
+  </div>
+
+  <div class="card mt-3" style="background:var(--brand-light);border:1px solid var(--brand);">
+    <div class="flex-row" style="align-items:flex-start;gap:10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0" style="width:18px;height:18px;margin-top:2px;color:var(--brand);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div>
+        <div style="font-weight:700;font-size:0.85rem;color:var(--text);margin-bottom:4px;">How to set up Gmail</div>
+        <ol style="margin:0;padding-left:16px;font-size:0.82rem;color:var(--text-2);line-height:1.8;">
+          <li>Go to <a href="https://myaccount.google.com/security" target="_blank" style="color:var(--brand);">Google Account Security</a></li>
+          <li>Enable <strong>2-Step Verification</strong> (required for App Passwords)</li>
+          <li>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--brand);">App Passwords</a></li>
+          <li>Generate a new App Password for "Mail"</li>
+          <li>Copy the 16-character password and paste it above</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleSecret(btn) {
+    const input = btn.closest('.secret-field').querySelector('.secret-input');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Hide';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Show';
+    }
+  }
+</script>
+{% endblock %}

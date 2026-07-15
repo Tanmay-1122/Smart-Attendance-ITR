@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash
 from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord, Department, ApiConfig
 from .. import db
 from ..api_config import KNOWN_KEYS, SECRET_KEYS
+from ..email import send_email
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -391,3 +392,89 @@ def api_keys():
         }
 
     return render_template('admin/api_keys.html', configs=configs)
+
+
+SMTP_FIELDS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM']
+
+
+@admin_bp.route('/email-settings', methods=['GET', 'POST'])
+@admin_required
+def email_settings():
+    if request.method == 'POST':
+        for key in SMTP_FIELDS:
+            value = request.form.get(key, '').strip()
+            config = ApiConfig.query.filter_by(key=key).first()
+            if config:
+                config.value = value if value else None
+            else:
+                config = ApiConfig(
+                    key=key,
+                    value=value if value else None,
+                    description=KNOWN_KEYS.get(key, ''),
+                    is_secret=key in SECRET_KEYS,
+                )
+                db.session.add(config)
+
+            if value:
+                current_app.config[key] = value
+            else:
+                current_app.config.pop(key, None)
+
+        db.session.commit()
+        flash('Email settings saved successfully!')
+        return redirect(url_for('admin.email_settings'))
+
+    configs = {}
+    for key in SMTP_FIELDS:
+        db_row = ApiConfig.query.filter_by(key=key).first()
+        env_val = os.environ.get(key, '')
+        app_val = current_app.config.get(key, '')
+        configs[key] = {
+            'description': KNOWN_KEYS.get(key, ''),
+            'is_secret': key in SECRET_KEYS,
+            'db_value': db_row.value if db_row else (app_val or ''),
+            'env_value': env_val if not (db_row and db_row.value) else '',
+            'source': 'DB' if (db_row and db_row.value) else 'Env' if env_val else 'Not Set',
+        }
+
+    smtp_configured = bool(current_app.config.get('SMTP_HOST', ''))
+    return render_template('admin/email_settings.html', configs=configs, smtp_configured=smtp_configured)
+
+
+@admin_bp.route('/test-email', methods=['POST'])
+@admin_required
+def test_email():
+    to = current_user.email
+    if not to:
+        flash('Your account has no email address set.')
+        return redirect(url_for('admin.email_settings'))
+
+    smtp_host = current_app.config.get('SMTP_HOST', '')
+    if not smtp_host:
+        flash('SMTP is not configured. Save your email settings first.')
+        return redirect(url_for('admin.email_settings'))
+
+    html = """
+    <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+      <div style="background:linear-gradient(135deg,#10B981,#059669);border-radius:16px;padding:32px;text-align:center;color:#fff;margin-bottom:24px;">
+        <h1 style="margin:0;font-size:1.4rem;font-weight:800;">SmartAttend</h1>
+        <p style="margin:8px 0 0;opacity:0.8;font-size:0.9rem;">Test Email</p>
+      </div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:24px;">
+        <p style="color:#374151;font-size:0.95rem;margin:0 0 16px;">Your Gmail/SMTP configuration is working correctly.</p>
+        <div style="background:#ECFDF5;border-radius:8px;padding:16px;margin-bottom:16px;">
+          <p style="margin:0;color:#065F46;font-weight:600;font-size:0.9rem;">Email notifications are now active.</p>
+        </div>
+        <p style="color:#6B7280;font-size:0.82rem;margin:0;">This test email was sent from the Admin Panel.</p>
+      </div>
+      <p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:16px;">SmartAttend — AI-powered attendance management</p>
+    </div>
+    """
+
+    result = send_email(to, 'SmartAttend — Test Email', html)
+    if result:
+        flash(f'Test email queued! Check your inbox at {to}.')
+    else:
+        flash(f'Failed to queue test email. Check your SMTP settings.')
+
+    return redirect(url_for('admin.email_settings'))
