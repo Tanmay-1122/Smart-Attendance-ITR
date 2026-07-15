@@ -16,15 +16,18 @@ def send_email(to, subject, html_body):
 
 def send_via_resend(to, subject, html_body):
     """Send email via Resend HTTP API. Returns True on success."""
-    api_key = current_app.config.get('RESEND_API_KEY', '')
+    api_key = current_app.config.get('RESEND_API_KEY', '').strip()
     smtp_from = current_app.config.get('SMTP_FROM', '')
 
     if not api_key:
         return False, 'No Resend API key configured'
 
-    from_addr = smtp_from or 'SmartAttend <onboarding@resend.dev>'
-    if '<' not in from_addr:
-        from_addr = f'SmartAttend <{from_addr}>'
+    # Resend requires: "Name <email@domain>" where domain is verified
+    # For testing, use onboarding@resend.dev (no verification needed)
+    if smtp_from and '<' in smtp_from:
+        from_addr = smtp_from
+    else:
+        from_addr = 'onboarding@resend.dev'
 
     payload = json.dumps({
         'from': from_addr,
