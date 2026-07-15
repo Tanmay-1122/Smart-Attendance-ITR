@@ -4,7 +4,7 @@
 
   <div class="section-header">
     <div class="page-title">Email Settings</div>
-    <div class="page-sub">Configure Gmail / SMTP for password resets, notifications, and alerts.</div>
+    <div class="page-sub">Configure email delivery for password resets, notifications, and alerts.</div>
   </div>
 
   <div class="card" style="margin-bottom:20px;">
@@ -14,8 +14,16 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="{% if smtp_configured %}var(--success){% else %}var(--danger){% endif %}" stroke-width="2" style="width:20px;height:20px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
         <div>
-          <div style="font-weight:700;font-size:0.9rem;">SMTP Status</div>
-          <div style="font-size:0.82rem;color:var(--text-secondary);">{% if smtp_configured %}Connected via {{ configs.SMTP_HOST.db_value }}{% else %}Not configured yet{% endif %}</div>
+          <div style="font-weight:700;font-size:0.9rem;">Email Status</div>
+          <div style="font-size:0.82rem;color:var(--text-secondary);">
+            {% if configs.RESEND_API_KEY.source == 'DB' or configs.RESEND_API_KEY.source == 'Env' %}
+              Resend API configured
+            {% elif smtp_configured %}
+              Connected via {{ configs.SMTP_HOST.db_value }}
+            {% else %}
+              Not configured yet
+            {% endif %}
+          </div>
         </div>
       </div>
       <span class="badge {% if smtp_configured %}badge-present{% else %}badge-absent{% endif %}">{% if smtp_configured %}Active{% else %}Inactive{% endif %}</span>
@@ -25,6 +33,21 @@
   <div class="card">
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="section-label" style="margin-bottom:12px;">Resend API (Recommended — works on Render)</div>
+      <div class="field">
+        <div class="flex-row flex-between" style="margin-bottom:6px;">
+          <label class="label" for="RESEND_API_KEY" style="margin-bottom:0;">Resend API Key</label>
+          <span class="badge {% if configs.RESEND_API_KEY.source == 'DB' %}badge-present{% elif configs.RESEND_API_KEY.source == 'Env' %}badge-review{% else %}badge-absent{% endif %}" style="font-size:0.65rem;">{{ configs.RESEND_API_KEY.source }}</span>
+        </div>
+        <div class="secret-field flex-row flex-gap-xs">
+          <input type="password" id="RESEND_API_KEY" name="RESEND_API_KEY" class="input secret-input" value="{{ configs.RESEND_API_KEY.db_value }}" placeholder="{% if configs.RESEND_API_KEY.source == 'DB' %}Saved (hidden){% else %}re_...{% endif %}" style="font-family:monospace;width:100%;">
+          <button type="button" class="toggle-secret" style="padding:4px 8px;font-size:.75rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;white-space:nowrap;background:var(--surface);color:var(--text-2);" onclick="toggleSecret(this)">Show</button>
+        </div>
+        <div class="field-hint">Get your API key at <a href="https://resend.com/api-keys" target="_blank" style="color:var(--brand);">resend.com/api-keys</a>. Free tier: 100 emails/day. No SMTP needed — works on Render.</div>
+      </div>
+
+      <div class="divider">SMTP (Fallback — for local dev or custom servers)</div>
 
       <div class="section-label" style="margin-bottom:12px;">Connection</div>
       <div class="stat-grid-2">
@@ -42,7 +65,7 @@
             <span class="badge {% if configs.SMTP_PORT.source == 'DB' %}badge-present{% elif configs.SMTP_PORT.source == 'Env' %}badge-review{% else %}badge-absent{% endif %}" style="font-size:0.65rem;">{{ configs.SMTP_PORT.source }}</span>
           </div>
           <input type="text" id="SMTP_PORT" name="SMTP_PORT" class="input" value="{{ configs.SMTP_PORT.db_value or '587' }}" placeholder="587" style="font-family:monospace;">
-          <div class="field-hint">Default: 587 (TLS)</div>
+          <div class="field-hint">Default: 587 (TLS) — often blocked on Render</div>
         </div>
       </div>
 
@@ -74,8 +97,8 @@
           <label class="label" for="SMTP_FROM" style="margin-bottom:0;">From Address</label>
           <span class="badge {% if configs.SMTP_FROM.source == 'DB' %}badge-present{% elif configs.SMTP_FROM.source == 'Env' %}badge-review{% else %}badge-absent{% endif %}" style="font-size:0.65rem;">{{ configs.SMTP_FROM.source }}</span>
         </div>
-        <input type="text" id="SMTP_FROM" name="SMTP_FROM" class="input" value="{{ configs.SMTP_FROM.db_value }}" placeholder="SmartAttend &lt;your-email@gmail.com&gt;" style="font-family:monospace;">
-        <div class="field-hint">Example: <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:0.78rem;">SmartAttend &lt;you@gmail.com&gt;</code></div>
+        <input type="text" id="SMTP_FROM" name="SMTP_FROM" class="input" value="{{ configs.SMTP_FROM.db_value }}" placeholder="SmartAttend <your-email@gmail.com>" style="font-family:monospace;">
+        <div class="field-hint">Example: <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:0.78rem;">SmartAttend <you@gmail.com></code></div>
         {% if configs.SMTP_FROM.db_value and '<' not in configs.SMTP_FROM.db_value %}
         <div class="alert alert-warning" style="margin-top:8px;font-size:0.82rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -116,13 +139,11 @@
   <div class="alert alert-info" style="margin-top:20px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
     <div>
-      <div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;">How to set up Gmail</div>
+      <div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;">How it works</div>
       <ol style="margin:0;padding-left:16px;font-size:0.82rem;line-height:1.8;">
-        <li>Go to <a href="https://myaccount.google.com/security" target="_blank" style="color:var(--brand);">Google Account Security</a></li>
-        <li>Enable <strong>2-Step Verification</strong> (required for App Passwords)</li>
-        <li>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--brand);">App Passwords</a></li>
-        <li>Generate a new App Password for "Mail"</li>
-        <li>Copy the 16-character password and paste it above</li>
+        <li><strong>Resend API (recommended):</strong> Add your Resend API key above. Uses HTTPS — works on Render, no SMTP blocking.</li>
+        <li><strong>SMTP fallback:</strong> Only used if Resend API key is not set. Requires port 587/465 open (blocked on Render free tier).</li>
+        <li>From address is auto-corrected to <code>SmartAttend <email></code> format if missing angle brackets.</li>
       </ol>
     </div>
   </div>

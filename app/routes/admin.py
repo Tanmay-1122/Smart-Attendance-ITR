@@ -394,7 +394,7 @@ def api_keys():
     return render_template('admin/api_keys.html', configs=configs)
 
 
-SMTP_FIELDS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM']
+SMTP_FIELDS = ['RESEND_API_KEY', 'SMTP_FROM', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS']
 
 
 @admin_bp.route('/email-settings', methods=['GET', 'POST'])
@@ -442,40 +442,69 @@ def email_settings():
             'source': 'DB' if (db_row and db_row.value) else 'Env' if env_val else 'Not Set',
         }
 
-    smtp_configured = bool(current_app.config.get('SMTP_HOST', ''))
-    return render_template('admin/email_settings.html', configs=configs, smtp_configured=smtp_configured)
+    email_configured = bool(current_app.config.get('RESEND_API_KEY', '') or current_app.config.get('SMTP_HOST', ''))
+    return render_template('admin/email_settings.html', configs=configs, smtp_configured=email_configured)
 
 
 @admin_bp.route('/test-email', methods=['POST'])
 @admin_required
 def test_email():
     try:
-        import smtplib, ssl
         from ..models import Student
 
+        resend_key = current_app.config.get('RESEND_API_KEY', '')
         smtp_host = current_app.config.get('SMTP_HOST', '')
-        smtp_port = int(current_app.config.get('SMTP_PORT', 587))
-        smtp_user = current_app.config.get('SMTP_USER', '')
-        smtp_pass = current_app.config.get('SMTP_PASS', '')
-        smtp_from = current_app.config.get('SMTP_FROM', smtp_user)
 
-        if not smtp_host:
-            flash('SMTP is not configured. Save your email settings first.')
+        if not resend_key and not smtp_host:
+            flash('No email service configured. Set a Resend API key or SMTP settings first.')
             return redirect(url_for('admin.email_settings'))
 
-        # Verify SMTP credentials first (sync)
-        try:
-            context = ssl.create_default_context()
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-                server.starttls(context=context)
-                server.login(smtp_user, smtp_pass)
-        except smtplib.SMTPAuthenticationError as e:
-            error_msg = str(e)
-            flash(f'SMTP login rejected by Gmail: {error_msg}. Check your email and App Password.')
-            return redirect(url_for('admin.email_settings'))
-        except Exception as e:
-            flash(f'SMTP connection failed: {e}')
-            return redirect(url_for('admin.email_settings'))
+        # Verify credentials before sending
+        if resend_key:
+            # Test Resend API with a dummy call to verify key works
+            import json, urllib.request
+            test_payload = json.dumps({
+                'from': 'SmartAttend <onboarding@resend.dev>',
+                'to': ['test@resend.dev'],
+                'subject': 'test',
+                'html': 'test',
+            }).encode('utf-8')
+            req = urllib.request.Request(
+                'https://api.resend.com/emails',
+                data=test_payload,
+                headers={'Authorization': f'Bearer {resend_key}', 'Content-Type': 'application/json'},
+                method='POST',
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    pass  # Key works
+            except urllib.error.HTTPError as e:
+                body = e.read().decode('utf-8', errors='replace')
+                if e.code == 403:
+                    flash(f'Resend API key rejected (403). Check your key at resend.com.')
+                else:
+                    flash(f'Resend API error {e.code}: {body}')
+                return redirect(url_for('admin.email_settings'))
+            except Exception as e:
+                flash(f'Cannot reach Resend API: {e}')
+                return redirect(url_for('admin.email_settings'))
+        else:
+            # Verify SMTP credentials
+            import smtplib, ssl
+            smtp_port = int(current_app.config.get('SMTP_PORT', 587))
+            smtp_user = current_app.config.get('SMTP_USER', '')
+            smtp_pass = current_app.config.get('SMTP_PASS', '')
+            try:
+                context = ssl.create_default_context()
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                    server.starttls(context=context)
+                    server.login(smtp_user, smtp_pass)
+            except smtplib.SMTPAuthenticationError as e:
+                flash(f'SMTP login rejected: {e}. Check your credentials.')
+                return redirect(url_for('admin.email_settings'))
+            except Exception as e:
+                flash(f'SMTP connection failed: {e}')
+                return redirect(url_for('admin.email_settings'))
 
         message = request.form.get('message', '').strip() or 'This is a test email from SmartAttend.'
         recipients = request.form.get('recipients', 'admin')
@@ -516,11 +545,12 @@ def test_email():
             flash('No recipients found. Make sure students have email addresses set.')
             return redirect(url_for('admin.email_settings'))
 
-        # Send remaining emails in background using verified credentials
+        # Send emails in background
         for _, addr in emails:
             send_email(addr, 'SmartAttend — Test Email', html)
 
-        flash(f'SMTP verified! Sending to {len(emails)} recipient{"s" if len(emails) != 1 else ""} in background.')
+        service = 'Resend API' if resend_key else 'SMTP'
+        flash(f'{service} verified! Sending to {len(emails)} recipient{"s" if len(emails) != 1 else ""} in background.')
 
     except Exception as e:
         import traceback

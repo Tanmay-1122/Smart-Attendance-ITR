@@ -36,6 +36,7 @@ KNOWN_KEYS = {
     'TELEGRAM_GROUP_ID': 'Telegram Group/Chat ID',
     'GOOGLE_AI_KEY': 'Google Gemini AI API Key',
     'HF_FACE_API_URL': 'Hugging Face Face API URL',
+    'RESEND_API_KEY': 'Resend API Key (Email)',
     'SMTP_HOST': 'SMTP Host',
     'SMTP_PORT': 'SMTP Port',
     'SMTP_USER': 'SMTP Username',
@@ -50,6 +51,6 @@ KNOWN_KEYS = {
 }
 
 SECRET_KEYS = {
-    'TELEGRAM_BOT_TOKEN', 'GOOGLE_AI_KEY', 'SMTP_PASS',
+    'TELEGRAM_BOT_TOKEN', 'GOOGLE_AI_KEY', 'SMTP_PASS', 'RESEND_API_KEY',
     'TWILIO_AUTH_TOKEN', 'VAPID_PRIVATE_KEY',
 }

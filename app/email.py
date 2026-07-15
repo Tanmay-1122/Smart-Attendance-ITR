@@ -1,5 +1,7 @@
 import smtplib
 import ssl
+import json
+import urllib.request
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
@@ -8,15 +10,63 @@ from .tasks import run_async
 
 @run_async
 def send_email(to, subject, html_body):
-    """Send an HTML email via SMTP. Returns True on success."""
+    """Send an HTML email. Returns True on success."""
     return send_email_sync(to, subject, html_body)
 
 
+def send_via_resend(to, subject, html_body):
+    """Send email via Resend HTTP API. Returns True on success."""
+    api_key = current_app.config.get('RESEND_API_KEY', '')
+    smtp_from = current_app.config.get('SMTP_FROM', '')
+
+    if not api_key:
+        return False, 'No Resend API key configured'
+
+    from_addr = smtp_from or 'SmartAttend <onboarding@resend.dev>'
+    if '<' not in from_addr:
+        from_addr = f'SmartAttend <{from_addr}>'
+
+    payload = json.dumps({
+        'from': from_addr,
+        'to': [to],
+        'subject': subject,
+        'html': html_body,
+    }).encode('utf-8')
+
+    req = urllib.request.Request(
+        'https://api.resend.com/emails',
+        data=payload,
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+        },
+        method='POST',
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+            print(f"[EMAIL] Resend sent to {to}: {subject} (id: {result.get('id', '')})")
+            return True, None
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        print(f"[EMAIL] Resend failed to {to}: {e.code} {body}")
+        return False, f'Resend API error {e.code}: {body}'
+    except Exception as e:
+        print(f"[EMAIL] Resend failed to {to}: {e}")
+        return False, str(e)
+
+
 def send_email_sync(to, subject, html_body):
-    """Send an HTML email synchronously. Returns True on success."""
+    """Send an HTML email synchronously. Tries Resend API first, falls back to SMTP."""
+    resend_key = current_app.config.get('RESEND_API_KEY', '')
+    if resend_key:
+        success, err = send_via_resend(to, subject, html_body)
+        return success
+
     smtp_host = current_app.config.get('SMTP_HOST', '')
     if not smtp_host:
-        print("[EMAIL] SMTP not configured, skipping email to", to)
+        print("[EMAIL] No email service configured, skipping email to", to)
         return False
 
     smtp_port = int(current_app.config.get('SMTP_PORT', 587))
@@ -37,10 +87,10 @@ def send_email_sync(to, subject, html_body):
             if smtp_user:
                 server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_from, [to], msg.as_string())
-        print(f"[EMAIL] Sent to {to}: {subject}")
+        print(f"[EMAIL] SMTP sent to {to}: {subject}")
         return True
     except Exception as e:
-        print(f"[EMAIL] Failed to send to {to}: {e}")
+        print(f"[EMAIL] SMTP failed to {to}: {e}")
         return False
 
 
