@@ -450,11 +450,31 @@ def email_settings():
 @admin_required
 def test_email():
     try:
+        import smtplib, ssl
         from ..models import Student
 
         smtp_host = current_app.config.get('SMTP_HOST', '')
+        smtp_port = int(current_app.config.get('SMTP_PORT', 587))
+        smtp_user = current_app.config.get('SMTP_USER', '')
+        smtp_pass = current_app.config.get('SMTP_PASS', '')
+        smtp_from = current_app.config.get('SMTP_FROM', smtp_user)
+
         if not smtp_host:
             flash('SMTP is not configured. Save your email settings first.')
+            return redirect(url_for('admin.email_settings'))
+
+        # Verify SMTP credentials first (sync)
+        try:
+            context = ssl.create_default_context()
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                server.starttls(context=context)
+                server.login(smtp_user, smtp_pass)
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = str(e)
+            flash(f'SMTP login rejected by Gmail: {error_msg}. Check your email and App Password.')
+            return redirect(url_for('admin.email_settings'))
+        except Exception as e:
+            flash(f'SMTP connection failed: {e}')
             return redirect(url_for('admin.email_settings'))
 
         message = request.form.get('message', '').strip() or 'This is a test email from SmartAttend.'
@@ -496,25 +516,11 @@ def test_email():
             flash('No recipients found. Make sure students have email addresses set.')
             return redirect(url_for('admin.email_settings'))
 
-        # Send first email synchronously to verify credentials
-        first_type, first_addr = emails[0]
-        verified = send_email_sync(first_addr, 'SmartAttend — Test Email', html)
+        # Send remaining emails in background using verified credentials
+        for _, addr in emails:
+            send_email(addr, 'SmartAttend — Test Email', html)
 
-        if not verified:
-            flash(f'SMTP verification failed for {first_addr}. Check your credentials and try again.')
-            return redirect(url_for('admin.email_settings'))
-
-        # Remaining emails sent in background (async)
-        remaining = emails[1:]
-        if remaining:
-            for _, addr in remaining:
-                send_email(addr, 'SmartAttend — Test Email', html)
-
-        total = len(emails)
-        if remaining:
-            flash(f'Credentials verified! Sent to {first_addr}. Sending to {len(remaining)} more in background.')
-        else:
-            flash(f'Test email sent successfully to {first_addr}!')
+        flash(f'SMTP verified! Sending to {len(emails)} recipient{"s" if len(emails) != 1 else ""} in background.')
 
     except Exception as e:
         import traceback
