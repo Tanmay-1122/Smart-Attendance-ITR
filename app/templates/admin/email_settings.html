@@ -83,8 +83,26 @@
       </div>
     </form>
 
-    <form method="POST" action="/admin/test-email" style="margin-top:10px;">
+    <form method="POST" action="/admin/test-email" style="margin-top:16px;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="section-label" style="margin-bottom:12px;">Test Email</div>
+
+      <div class="field">
+        <label class="label" for="recipients">Send to</label>
+        <select id="recipients" name="recipients" class="select">
+          <option value="admin">Admin Only ({{ current_user.email }})</option>
+          <option value="students">All Students</option>
+          <option value="all">Admin + All Students</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="message">Custom Message</label>
+        <textarea id="message" name="message" class="input" rows="3" placeholder="This is a test email from SmartAttend." style="resize:vertical;min-height:70px;"></textarea>
+        <div class="field-hint">Leave blank for the default test message.</div>
+      </div>
+
       <button type="submit" class="btn btn-ghost" style="width:100%;">Send Test Email</button>
     </form>
   </div>

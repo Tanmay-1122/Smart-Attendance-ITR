@@ -444,37 +444,58 @@ def email_settings():
 @admin_bp.route('/test-email', methods=['POST'])
 @admin_required
 def test_email():
-    to = current_user.email
-    if not to:
-        flash('Your account has no email address set.')
-        return redirect(url_for('admin.email_settings'))
+    from ..models import Student
 
     smtp_host = current_app.config.get('SMTP_HOST', '')
     if not smtp_host:
         flash('SMTP is not configured. Save your email settings first.')
         return redirect(url_for('admin.email_settings'))
 
-    html = """
+    message = request.form.get('message', '').strip() or 'This is a test email from SmartAttend.'
+    recipients = request.form.get('recipients', 'admin')
+
+    email_lines = message.replace('\n', '<br>')
+    html = f"""
     <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
-      <div style="background:linear-gradient(135deg,#10B981,#059669);border-radius:16px;padding:32px;text-align:center;color:#fff;margin-bottom:24px;">
+      <div style="background:linear-gradient(135deg,#6366F1,#7C3AED);border-radius:16px;padding:32px;text-align:center;color:#fff;margin-bottom:24px;">
         <h1 style="margin:0;font-size:1.4rem;font-weight:800;">SmartAttend</h1>
-        <p style="margin:8px 0 0;opacity:0.8;font-size:0.9rem;">Test Email</p>
+        <p style="margin:8px 0 0;opacity:0.8;font-size:0.9rem;">Admin Announcement</p>
       </div>
       <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:24px;">
-        <p style="color:#374151;font-size:0.95rem;margin:0 0 16px;">Your Gmail/SMTP configuration is working correctly.</p>
-        <div style="background:#ECFDF5;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <p style="margin:0;color:#065F46;font-weight:600;font-size:0.9rem;">Email notifications are now active.</p>
+        <p style="color:#374151;font-size:0.95rem;margin:0 0 16px;">{email_lines}</p>
+        <div style="background:#EEF2FF;border-radius:8px;padding:16px;margin-bottom:16px;">
+          <p style="margin:0;color:#4338CA;font-weight:600;font-size:0.85rem;">Sent by {current_user.name} (Admin)</p>
         </div>
-        <p style="color:#6B7280;font-size:0.82rem;margin:0;">This test email was sent from the Admin Panel.</p>
+        <p style="color:#9CA3AF;font-size:0.82rem;margin:0;">This is a test message sent from the Admin Panel.</p>
       </div>
       <p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:16px;">SmartAttend — AI-powered attendance management</p>
     </div>
     """
 
-    result = send_email(to, 'SmartAttend — Test Email', html)
-    if result:
-        flash(f'Test email queued! Check your inbox at {to}.')
-    else:
-        flash(f'Failed to queue test email. Check your SMTP settings.')
+    emails = []
 
+    if recipients in ('admin', 'all'):
+        if current_user.email:
+            emails.append(current_user.email)
+
+    if recipients in ('students', 'all'):
+        students = Student.query.join(Student.user).all()
+        for s in students:
+            if s.user and s.user.email and s.user.email_notifications:
+                if s.user.email not in emails:
+                    emails.append(s.user.email)
+
+    if not emails:
+        flash('No recipients found. Make sure students have email addresses set.')
+        return redirect(url_for('admin.email_settings'))
+
+    sent = 0
+    for addr in emails:
+        try:
+            result = send_email(addr, 'SmartAttend — Test Email', html)
+            sent += 1
+        except Exception:
+            pass
+
+    flash(f'Test emails queued for {sent} recipient{"s" if sent != 1 else ""}. Check your inboxes.')
     return redirect(url_for('admin.email_settings'))
