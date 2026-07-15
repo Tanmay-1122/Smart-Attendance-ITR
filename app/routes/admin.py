@@ -6,7 +6,8 @@ from werkzeug.security import generate_password_hash
 from ..models import User, Student, TeacherClass, StudentClass, AttendanceRecord, Department, ApiConfig
 from .. import db
 from ..api_config import KNOWN_KEYS, SECRET_KEYS
-from ..email import send_email
+from ..email import send_email, send_email_sync
+import time
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -454,6 +455,18 @@ def test_email():
     message = request.form.get('message', '').strip() or 'This is a test email from SmartAttend.'
     recipients = request.form.get('recipients', 'admin')
 
+    # Auto-correct From address if missing angle brackets
+    smtp_from = current_app.config.get('SMTP_FROM', '')
+    if smtp_from and '<' not in smtp_from:
+        corrected = f'SmartAttend <{smtp_from}>'
+        current_app.config['SMTP_FROM'] = corrected
+        from ..models import ApiConfig
+        cfg = ApiConfig.query.filter_by(key='SMTP_FROM').first()
+        if cfg:
+            cfg.value = corrected
+            db.session.commit()
+        flash(f'From address corrected to: {corrected}')
+
     email_lines = message.replace('\n', '<br>')
     html = f"""
     <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
@@ -490,12 +503,27 @@ def test_email():
         return redirect(url_for('admin.email_settings'))
 
     sent = 0
-    for addr in emails:
+    failed = 0
+    errors = []
+    for i, addr in enumerate(emails):
         try:
-            result = send_email(addr, 'SmartAttend — Test Email', html)
-            sent += 1
-        except Exception:
-            pass
+            result = send_email_sync(addr, 'SmartAttend — Test Email', html)
+            if result:
+                sent += 1
+            else:
+                failed += 1
+                errors.append(addr)
+        except Exception as e:
+            failed += 1
+            errors.append(f"{addr} ({e})")
 
-    flash(f'Test emails queued for {sent} recipient{"s" if sent != 1 else ""}. Check your inboxes.')
+        # Delay between sends to avoid Gmail rate limiting
+        if i < len(emails) - 1:
+            time.sleep(1)
+
+    if failed:
+        flash(f'Sent: {sent} | Failed: {failed}. Failed: {", ".join(errors[:3])}{"..." if len(errors) > 3 else ""}')
+    else:
+        flash(f'Test emails sent successfully to {sent} recipient{"s" if sent != 1 else ""}.')
+
     return redirect(url_for('admin.email_settings'))

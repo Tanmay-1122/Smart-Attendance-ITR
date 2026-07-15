@@ -9,6 +9,11 @@ from .tasks import run_async
 @run_async
 def send_email(to, subject, html_body):
     """Send an HTML email via SMTP. Returns True on success."""
+    return send_email_sync(to, subject, html_body)
+
+
+def send_email_sync(to, subject, html_body):
+    """Send an HTML email synchronously. Returns True on success."""
     smtp_host = current_app.config.get('SMTP_HOST', '')
     if not smtp_host:
         print("[EMAIL] SMTP not configured, skipping email to", to)
